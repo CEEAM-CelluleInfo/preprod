@@ -4,7 +4,6 @@ import HeaderConnected from "@/components/layout/HeaderConnected";
 import Footer from "@/components/layout/Footer";
 import LaureatCard from "@/components/laureatDetail/LaureatCard";
 import { Briefcase, ChevronLeft, ChevronRight, Filter, GraduationCap, Search, Sparkles, Users } from "lucide-react";
-import { laureatsData as fallbackData } from "@/data/laureatsData";
 import { getAbsoluteMediaUrl } from "@/lib/utils";
 import { LaureatsService } from "@/services/laureatsService";
 import { AuthService } from "@/services/authService";
@@ -138,13 +137,13 @@ const LaureatsUserConnected = () => {
           }));
           setLaureats(mapped);
         } else {
-          console.warn("API lauréats non disponible, utilisation des données de fallback");
-          setLaureats(fallbackData);
+          console.warn("API lauréats non disponible");
+          setLaureats([]);
         }
       } catch (err) {
         console.error("Erreur chargement lauréats:", err);
         setError("Impossible de charger les données");
-        setLaureats(fallbackData);
+        setLaureats([]);
       } finally {
         setIsLoading(false);
       }
