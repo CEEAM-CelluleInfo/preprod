@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python environments
+backend/env/
+backend/**/venv/
+backend/**/.venv/
+
+# Django
+db.sqlite3
+
+# Environnements virtuels
+venv/
+*.env
+
+# Autres
+*.log
+backend/credentials.txt
+modelisation_db/
+projet.zip
+projet-test-v1.zip
+maj/
+CONTEXTE_PROJET.md

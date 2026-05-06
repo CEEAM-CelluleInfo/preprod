@@ -1,0 +1,15 @@
+Django>=4.2
+djangorestframework==3.17.1
+django-filter==25.2
+djangorestframework-simplejwt==5.5.1
+django-cors-headers==4.9.0
+reportlab==4.5.0
+python-decouple==3.8
+django-jazzmin==3.0.4
+django-extensions==4.1
+psycopg2==2.9.12
+psycopg2-binary==2.9.12
+boto3==1.43.3
+django-storages==1.14.6
+gunicorn==26.0.0
+whitenoise==6.12.0

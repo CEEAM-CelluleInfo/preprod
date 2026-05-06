@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 213 55% 20%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 24 95% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 24 95% 53%;
+
+    --radius: 0.75rem;
+
+    /* Custom CEEAM colors */
+    --navy: 213 55% 20%;
+    --navy-light: 213 45% 30%;
+    --orange: 24 95% 53%;
+    --orange-light: 24 95% 58%;
+    --cream: 40 33% 97%;
+  }
+
+  .dark {
+    --background: 213 55% 10%;
+    --foreground: 0 0% 98%;
+    --card: 213 55% 15%;
+    --card-foreground: 0 0% 98%;
+    --popover: 213 55% 15%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 213 45% 30%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 213 40% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 24 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 213 40% 25%;
+    --input: 213 40% 25%;
+    --ring: 24 95% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .nav-link {
+    @apply text-foreground/80 hover:text-foreground transition-colors font-medium text-sm;
+  }
+
+  .nav-link-active {
+    @apply text-foreground font-semibold border-b-2 border-primary pb-1;
+  }
+
+  .section-title {
+    @apply text-2xl md:text-3xl font-bold text-foreground;
+  }
+
+  .card-ceeam {
+    @apply bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-medium hover:opacity-90 transition-opacity;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary px-6 py-2.5 rounded-full font-medium hover:bg-primary hover:text-primary-foreground transition-colors;
+  }
+
+  .navy-section {
+    @apply bg-secondary text-secondary-foreground;
+  }
+
+  .dot-indicator {
+    @apply w-2 h-2 rounded-full bg-primary/30;
+  }
+
+  .dot-indicator-active {
+    @apply w-8 h-2 rounded-full bg-primary;
+  }
+}

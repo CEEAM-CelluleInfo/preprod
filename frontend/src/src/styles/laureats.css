@@ -1,0 +1,112 @@
+/* src/styles/laureats.css */
+
+/* Section Hero */
+.laureats-hero {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
+
+.laureats-hero-icon {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+/* Stats Cards */
+.stats-card {
+  background: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Cards de Lauréats */
+.laureat-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.laureat-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.laureat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+}
+
+.laureat-promo-badge {
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.laureat-photo {
+  border: 4px solid #e5e7eb;
+  transition: border-color 0.3s ease;
+}
+
+.laureat-card:hover .laureat-photo {
+  border-color: #3b82f6;
+}
+
+/* Filtres */
+.filters-container {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Pagination */
+.pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pagination-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.pagination-dot-active {
+  background: #1e40af;
+  transform: scale(1.2);
+}
+
+.pagination-dot-inactive {
+  background: #3b82f6;
+  opacity: 0.5;
+}
+
+.pagination-btn {
+  color: #3b82f6;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  color: #1e40af;
+  transform: scale(1.1);
+}
+
+/* Section Join */
+.join-section {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+}
