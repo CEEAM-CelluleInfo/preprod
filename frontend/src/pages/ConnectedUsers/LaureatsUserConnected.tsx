@@ -7,6 +7,7 @@ import { Briefcase, ChevronLeft, ChevronRight, Filter, GraduationCap, Search, Sp
 import { getAbsoluteMediaUrl } from "@/lib/utils";
 import { LaureatsService } from "@/services/laureatsService";
 import { AuthService } from "@/services/authService";
+import { API_BASE_URL } from "@/services/api.config";
 
 interface Laureat {
   id: number;
@@ -102,7 +103,7 @@ const LaureatsUserConnected = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const statsRes = await fetch("/api/laureats/stats/", { credentials: "include" });
+        const statsRes = await fetch(`${API_BASE_URL}/laureats/stats/`, { credentials: "include" });
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           setStats({
@@ -113,14 +114,14 @@ const LaureatsUserConnected = () => {
           });
         }
 
-        const filtersRes = await fetch("/api/laureats/filters/", { credentials: "include" });
+        const filtersRes = await fetch(`${API_BASE_URL}/laureats/filters/`, { credentials: "include" });
         if (filtersRes.ok) {
           const filtersData = await filtersRes.json();
           setPromotions(filtersData.promotions || ["Toutes les promos"]);
           setSpecialities(filtersData.specialities || ["Toutes les spécialités"]);
         }
 
-        const laureatsRes = await fetch("/api/laureats/?limit=1000", { credentials: "include" });
+        const laureatsRes = await fetch(`${API_BASE_URL}/laureats/?limit=1000`, { credentials: "include" });
         if (laureatsRes.ok) {
           const data = await laureatsRes.json();
           const results = data.results || [];
