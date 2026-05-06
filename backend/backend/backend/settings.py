@@ -14,13 +14,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-kfw*o=4ou#mkj*bj10jsxy-#o^z%0)jawkh8(3k0l58#e=)g**'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'api.ceaam.org',
     'ceaam.org',
     'www.ceaam.org',
-    '172.31.46.156',
+    '13.60.99.150',
     'localhost',
     '127.0.0.1',
 ]
