@@ -391,7 +391,7 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'quwq ijtt lrpv zhaa')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'CEEAM<souleonetraore.940@gmail.com>')
 
 # URL du frontend pour les liens dans les emails
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:8080')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://ceaam.org')
 
 # Durée de validité des tokens de vérification et reset password
 PASSWORD_RESET_TIMEOUT = 15 * 60  # 15 minutes en secondes

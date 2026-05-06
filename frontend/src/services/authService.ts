@@ -65,6 +65,7 @@ export class AuthService {
       country: data.country || data.countryId,
       promotion: data.promotion || '',
       specialite: data.specialiteId,
+      frontend_url: window.location.origin,
     });
     
     // Ne pas stocker les données utilisateur après inscription
@@ -245,7 +246,10 @@ export class AuthService {
    * Demande de réinitialisation de mot de passe (mot de passe oublié)
    */
   static async forgotPassword(email: string): Promise<{ message: string }> {
-    return apiPost<{ message: string }>('/auth/forgot-password/', { email });
+    return apiPost<{ message: string }>('/auth/forgot-password/', {
+      email,
+      frontend_url: window.location.origin,
+    });
   }
 
   /**

@@ -124,40 +124,59 @@ export const Ecole: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      const loadJson = async <T,>(url: string, errorMessage: string): Promise<T> => {
+        const response = await fetch(url, {
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(errorMessage);
+        }
+
+        return response.json() as Promise<T>;
+      };
+
       try {
-        const clubsRes = await fetch(`${API_BASE_URL}/school/clubs/`);
-        if (!clubsRes.ok) throw new Error('Erreur chargement clubs');
-        const clubsData = await clubsRes.json();
-        setClubs(clubsData.data || []);
+        const [clubsResult, calendarResult, infoResult, mediaResult, guideResult] = await Promise.allSettled([
+          loadJson<{ data?: Club[] }>(`${API_BASE_URL}/school/clubs/`, 'Erreur chargement clubs'),
+          loadJson<AcademicCalendar>(`${API_BASE_URL}/school/academic-calendar/`, 'Erreur chargement calendrier'),
+          loadJson<{ data?: PracticalInfo[] }>(`${API_BASE_URL}/school/practical-info/`, 'Erreur chargement informations pratiques'),
+          loadJson<{ data?: SchoolMedia[] }>(`${API_BASE_URL}/school/media/`, 'Erreur chargement médias'),
+          loadJson<StudentGuide>(`${API_BASE_URL}/school/student-guide/`, 'Erreur chargement guide étudiant'),
+        ]);
 
-        const calendarRes = await fetch(`${API_BASE_URL}/school/academic-calendar/`);
-        if (!calendarRes.ok) throw new Error('Erreur chargement calendrier');
-        const calendarData = await calendarRes.json();
-        setCalendar(calendarData);
+        if (clubsResult.status === 'fulfilled') {
+          setClubs(clubsResult.value.data || []);
+        }
 
-        try {
-          const infoRes = await fetch(`${API_BASE_URL}/school/practical-info/`);
-          if (infoRes.ok) {
-            const infoData = await infoRes.json();
-            setPracticalInfos(infoData.data || []);
-          }
-        } catch {
+        if (calendarResult.status === 'fulfilled') {
+          setCalendar(calendarResult.value);
+        }
+
+        if (infoResult.status === 'fulfilled') {
+          setPracticalInfos(infoResult.value.data || []);
+        } else {
           console.warn('Info pratiques non disponibles');
         }
 
-        const mediaRes = await fetch(`${API_BASE_URL}/school/media/`);
-        if (!mediaRes.ok) throw new Error('Erreur chargement médias');
-        const mediaData = await mediaRes.json();
-        setMedia(mediaData.data || []);
+        if (mediaResult.status === 'fulfilled') {
+          setMedia(mediaResult.value.data || []);
+        }
 
-        try {
-          const guideRes = await fetch(`${API_BASE_URL}/school/student-guide/`);
-          if (guideRes.ok) {
-            const guideData = await guideRes.json();
-            setGuide(guideData);
-          }
-        } catch {
+        if (guideResult.status === 'fulfilled') {
+          setGuide(guideResult.value);
+        } else {
           console.warn('Guide étudiant non disponible');
+        }
+
+        if (
+          clubsResult.status === 'rejected' &&
+          calendarResult.status === 'rejected' &&
+          mediaResult.status === 'rejected'
+        ) {
+          throw clubsResult.reason;
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erreur de chargement');
@@ -363,26 +382,32 @@ export const Ecole: React.FC = () => {
             </div>
 
             <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              {currentClubs.map((club) => (
-                <article
-                  key={club.id}
-                  className="group rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_60px_rgba(15,23,42,0.10)]"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f59f24] text-base font-bold text-white">
-                      {club.logo_url ? (
-                        <img src={club.logo_url} alt={club.name} className="h-full w-full object-cover" />
-                      ) : (
-                        club.name.charAt(0)
-                      )}
+              {currentClubs.length > 0 ? (
+                currentClubs.map((club) => (
+                  <article
+                    key={club.id}
+                    className="group rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_60px_rgba(15,23,42,0.10)]"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f59f24] text-base font-bold text-white">
+                        {club.logo_url ? (
+                          <img src={club.logo_url} alt={club.name} className="h-full w-full object-cover" />
+                        ) : (
+                          club.name.charAt(0)
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="break-words text-lg font-bold text-slate-950">{club.name}</h3>
+                        <p className="mt-1 text-sm text-slate-500">{club.interest}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="break-words text-lg font-bold text-slate-950">{club.name}</h3>
-                      <p className="mt-1 text-sm text-slate-500">{club.interest}</p>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))
+              ) : (
+                <div className="md:col-span-2 xl:col-span-4 rounded-[28px] border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                  Les clubs sont temporairement indisponibles. Les autres informations de l'ecole restent accessibles.
+                </div>
+              )}
             </div>
 
             {totalPages > 1 && (
