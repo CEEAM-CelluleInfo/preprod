@@ -1,6 +1,7 @@
 
 from pathlib import Path
 import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,7 +17,6 @@ SECRET_KEY = 'django-insecure-kfw*o=4ou#mkj*bj10jsxy-#o^z%0)jawkh8(3k0l58#e=)g**
 DEBUG = True
 
 ALLOWED_HOSTS = []
-CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition
@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',  # JWT pour l'authentification
     'rest_framework_simplejwt.token_blacklist',  # Blacklist pour les tokens révoqués
     'corsheaders',
+    'storages',
 
     # Local
     'api',
@@ -69,19 +70,41 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+DB_NAME = config('DB_NAME', default='')
+DB_USER = config('DB_USER', default='')
+DB_PASSWORD = config('DB_PASSWORD', default='')
+DB_HOST = config('DB_HOST', default='')
+DB_PORT = config('DB_PORT', default='5432')
+DB_SSLMODE = config('DB_SSLMODE', default='require')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+USE_POSTGRES = config('USE_POSTGRES', default=False, cast=bool)
+
+if USE_POSTGRES:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            "PORT": DB_PORT,
+            "CONN_MAX_AGE": 60,
+            "OPTIONS": {
+                "sslmode": DB_SSLMODE,
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / 'db.sqlite3',
+            "OPTIONS": {
+                "timeout": 20,
+            },
+        }
+    }
 
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -112,32 +135,63 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = 'static/'
 
-# Media files (uploads utilisateurs : photos de profil, etc.)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='')
+AWS_QUERYSTRING_AUTH = config('AWS_QUERYSTRING_AUTH', default=False, cast=bool)
+AWS_LOCATION = config('AWS_LOCATION', default='media')
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
+USE_S3 = config(
+    'USE_S3',
+    default=bool(AWS_STORAGE_BUCKET_NAME),
+    cast=bool,
+)
+
+if USE_S3:
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    if not AWS_QUERYSTRING_AUTH:
+        if AWS_S3_REGION_NAME:
+            AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+        else:
+            AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {
+                'location': AWS_LOCATION,
+                'default_acl': AWS_DEFAULT_ACL,
+                'file_overwrite': AWS_S3_FILE_OVERWRITE,
+            },
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
+    if AWS_QUERYSTRING_AUTH:
+        if AWS_S3_REGION_NAME:
+            MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/{AWS_LOCATION}/'
+        else:
+            MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{AWS_LOCATION}/'
+    else:
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+else:
+    # Media files (uploads utilisateurs : photos de profil, etc.)
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# ====================================================
-# CONFIGURATION DU MODÈLE USER PERSONNALISÉ
-# ====================================================
 
 # Spécifier le modèle User personnalisé
 AUTH_USER_MODEL = 'api.User'
 
-
-# ====================================================
-# CONFIGURATION DJANGO REST FRAMEWORK
-# ====================================================
 
 REST_FRAMEWORK = {
     # Utiliser JWT pour l'authentification par défaut
@@ -178,9 +232,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    # Durée de vie de l'access token
-    # En développement: 1 jour pour éviter les déconnexions fréquentes
-    # En production: réduire à 15 minutes
+    # Durée de vie du access token (court terme)
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1) if DEBUG else timedelta(minutes=15),
     
     # Durée de vie du refresh token (longue durée)
@@ -226,15 +278,23 @@ SIMPLE_JWT = {
 # CONFIGURATION CORS (pour le frontend)
 # ====================================================
 
+FRONTEND_ORIGINS = [
+    'https://ceaam.org',
+    'https://www.ceaam.org',
+]
+
+LOCAL_DEV_ORIGINS = [
+    'http://localhost:8080',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:8080',
+]
+
 # En production, spécifier les origines autorisées
 if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS + LOCAL_DEV_ORIGINS
 else:
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:5173",  # Vite.js dev server
-        "http://localhost:3000",  # React dev server
-        # Ajouter votre domaine de production ici
-    ]
+    CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 
 # Autoriser les cookies dans les requêtes cross-origin
 CORS_ALLOW_CREDENTIALS = True
@@ -279,12 +339,10 @@ if not DEBUG:
 # Configuration CSRF (avec cookies)
 CSRF_COOKIE_HTTPONLY = False  # False car le frontend a besoin de lire le CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8080',  # Port Vite actuel
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:8080',
-]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS + LOCAL_DEV_ORIGINS
+else:
+    CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS
 
 
 # ====================================================

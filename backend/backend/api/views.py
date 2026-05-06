@@ -4,10 +4,12 @@ Views Django REST Framework - Plateforme CEEAM
 
 import json
 import re
+import uuid
 from django.db import models
 from django.conf import settings
 from django.contrib.auth import authenticate
 from datetime import datetime, timedelta
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -65,6 +67,29 @@ from .models import AboutStat, Leader, AboutContent
 from .serializers import AboutStatSerializer, LeaderSerializer, AboutContentSerializer
 from .models import Club, AcademicDate, PracticalInfo, SchoolMedia, StudentGuide
 from .serializers import ClubListSerializer, AcademicCalendarSerializer, PracticalInfoSerializer, SchoolMediaSerializer, StudentGuideSerializer
+
+
+def _storage_name_from_value(value: str | None) -> str:
+    if not value:
+        return ""
+
+    storage_name = value.lstrip("/")
+    if storage_name.startswith("media/"):
+        storage_name = storage_name[len("media/"):]
+    return storage_name
+
+
+def _resolve_media_url(value: str | None) -> str:
+    if not value:
+        return ""
+    if value.startswith("http://") or value.startswith("https://"):
+        return value
+
+    storage_name = _storage_name_from_value(value)
+    try:
+        return default_storage.url(storage_name)
+    except Exception:
+        return value
 
 
 # =====================================================
@@ -451,7 +476,10 @@ class ActivityViewSet(viewsets.ModelViewSet):
             return ""
         if value.startswith("http://") or value.startswith("https://"):
             return value
-        return request.build_absolute_uri(value)
+        resolved = _resolve_media_url(value)
+        if resolved.startswith("http://") or resolved.startswith("https://"):
+            return resolved
+        return request.build_absolute_uri(resolved)
 
     def _format_date_fr(self, dt_value):
         if not dt_value:
@@ -1708,33 +1736,18 @@ class UserProfilePhotoView(APIView):
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
             )
         
-        # Sauvegarder la photo (en production, utiliser un CDN/S3)
-        import os
-        from django.conf import settings as django_settings
-        
-        # Créer le dossier media si nécessaire
-        media_dir = os.path.join(django_settings.BASE_DIR, 'media', 'avatars')
-        os.makedirs(media_dir, exist_ok=True)
-        
         # Générer un nom de fichier unique
-        import uuid
         ext = photo.name.split('.')[-1]
-        filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}.{ext}"
-        filepath = os.path.join(media_dir, filename)
-        
-        # Sauvegarder le fichier
-        with open(filepath, 'wb+') as destination:
-            for chunk in photo.chunks():
-                destination.write(chunk)
-        
-        # Mettre à jour l'URL de l'avatar
-        # Construire l'URL complète pour le frontend
-        photo_url = f"/media/avatars/{filename}"
-        request.user.avatar_url = photo_url
+        filename = f"avatars/{request.user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+
+        previous_avatar = _storage_name_from_value(request.user.avatar_url)
+        if previous_avatar and default_storage.exists(previous_avatar):
+            default_storage.delete(previous_avatar)
+
+        saved_name = default_storage.save(filename, photo)
+        request.user.avatar_url = saved_name
         request.user.save()
-        
-        # Retourner l'URL absolue pour le frontend
-        full_photo_url = request.build_absolute_uri(photo_url)
+        full_photo_url = default_storage.url(saved_name)
         
         return Response({
             'photoUrl': full_photo_url,
@@ -1744,15 +1757,10 @@ class UserProfilePhotoView(APIView):
     def delete(self, request):
         """Supprime la photo de profil."""
         user = request.user
-        
-        # Supprimer le fichier si c'est un fichier local
-        if user.avatar_url and user.avatar_url.startswith('/media/'):
-            import os
-            from django.conf import settings as django_settings
-            
-            filepath = os.path.join(django_settings.BASE_DIR, user.avatar_url[1:])
-            if os.path.exists(filepath):
-                os.remove(filepath)
+
+        storage_name = _storage_name_from_value(user.avatar_url)
+        if storage_name and default_storage.exists(storage_name):
+            default_storage.delete(storage_name)
         
         user.avatar_url = ''
         user.save()

@@ -2,6 +2,7 @@
 Serializers Django REST Framework - Plateforme CEEAM
 """
 
+from django.core.files.storage import default_storage
 from rest_framework import serializers
 
 from .models import (
@@ -15,6 +16,22 @@ from .models import (
     SchoolGuide, Document, FAQ, AboutStat, Leader, AboutContent, PracticalInfo, SchoolMedia, StudentGuide,
 
 )
+
+
+def _resolve_media_url(value: str | None) -> str:
+    if not value:
+        return ""
+    if value.startswith("http://") or value.startswith("https://"):
+        return value
+
+    storage_name = value.lstrip("/")
+    if storage_name.startswith("media/"):
+        storage_name = storage_name[len("media/"):]
+
+    try:
+        return default_storage.url(storage_name)
+    except Exception:
+        return value
 
 
 # =====================================================
@@ -52,6 +69,11 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "date_joined"]
         extra_kwargs = {"password": {"write_only": True}}
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["avatar_url"] = _resolve_media_url(data.get("avatar_url"))
+        return data
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -101,17 +123,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return ""
     
     def get_photoUrl(self, obj):
-        """Retourne l'URL absolue de la photo de profil."""
-        if not obj.avatar_url:
-            return ""
-        # Si c'est déjà une URL absolue, la retourner telle quelle
-        if obj.avatar_url.startswith('http'):
-            return obj.avatar_url
-        # Sinon, construire l'URL absolue à partir du contexte de la requête
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.avatar_url)
-        return obj.avatar_url
+        """Retourne l'URL de la photo de profil via le storage configuré."""
+        return _resolve_media_url(obj.avatar_url)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["avatar_url"] = _resolve_media_url(data.get("avatar_url"))
+        return data
     
     def validate_language(self, value):
         """Convertit la valeur affichée de la langue en code."""
