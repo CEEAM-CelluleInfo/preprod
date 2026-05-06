@@ -289,6 +289,10 @@ SIMPLE_JWT = {
 # CONFIGURATION CORS (pour le frontend)
 # ====================================================
 
+BACKEND_ORIGINS = [
+    'https://api.ceaam.org',
+]
+
 FRONTEND_ORIGINS = [
     'https://ceaam.org',
     'https://www.ceaam.org',
@@ -351,9 +355,9 @@ if not DEBUG:
 CSRF_COOKIE_HTTPONLY = False  # False car le frontend a besoin de lire le CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'
 if DEBUG:
-    CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS + LOCAL_DEV_ORIGINS
+    CSRF_TRUSTED_ORIGINS = BACKEND_ORIGINS + FRONTEND_ORIGINS + LOCAL_DEV_ORIGINS
 else:
-    CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS
+    CSRF_TRUSTED_ORIGINS = BACKEND_ORIGINS + FRONTEND_ORIGINS
 
 
 # ====================================================

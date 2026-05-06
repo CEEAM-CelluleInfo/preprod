@@ -16,6 +16,14 @@ import {
 } from './api.config';
 import { User, AuthResponse, LoginFormData, RegisterFormData, AdminVerifyResponse } from '@/types/auth';
 
+async function parseOptionalJson<T>(response: Response): Promise<T | Record<string, never>> {
+  const text = await response.text();
+  if (!text.trim()) {
+    return {};
+  }
+  return JSON.parse(text) as T;
+}
+
 /**
  * Service d'authentification
  */
@@ -179,11 +187,33 @@ export class AuthService {
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await parseOptionalJson<Record<string, any>>(response);
       throw errorData;
     }
     
-    return response.json();
+    return parseOptionalJson<{
+      already_verified: boolean;
+      message: string;
+      expired?: boolean;
+      error?: string;
+      account_info?: {
+        first_name: string;
+        last_name: string;
+        email: string;
+        created_at?: string;
+      };
+    }>(response) as Promise<{
+      already_verified: boolean;
+      message: string;
+      expired?: boolean;
+      error?: string;
+      account_info?: {
+        first_name: string;
+        last_name: string;
+        email: string;
+        created_at?: string;
+      };
+    }>;
   }
 
   /**
@@ -206,7 +236,7 @@ export class AuthService {
       }),
     });
 
-    const data = await response.json();
+    const data = await parseOptionalJson<Record<string, any>>(response);
     if (!response.ok) throw data;
     return data;
   }
