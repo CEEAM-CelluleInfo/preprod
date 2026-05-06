@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { API_BASE_URL } from '@/services/api.config';
 
 interface Club {
   id: number;
@@ -124,18 +125,18 @@ export const Ecole: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const clubsRes = await fetch('/api/school/clubs/');
+        const clubsRes = await fetch(`${API_BASE_URL}/school/clubs/`);
         if (!clubsRes.ok) throw new Error('Erreur chargement clubs');
         const clubsData = await clubsRes.json();
         setClubs(clubsData.data || []);
 
-        const calendarRes = await fetch('/api/school/academic-calendar/');
+        const calendarRes = await fetch(`${API_BASE_URL}/school/academic-calendar/`);
         if (!calendarRes.ok) throw new Error('Erreur chargement calendrier');
         const calendarData = await calendarRes.json();
         setCalendar(calendarData);
 
         try {
-          const infoRes = await fetch('/api/school/practical-info/');
+          const infoRes = await fetch(`${API_BASE_URL}/school/practical-info/`);
           if (infoRes.ok) {
             const infoData = await infoRes.json();
             setPracticalInfos(infoData.data || []);
@@ -144,13 +145,13 @@ export const Ecole: React.FC = () => {
           console.warn('Info pratiques non disponibles');
         }
 
-        const mediaRes = await fetch('/api/school/media/');
+        const mediaRes = await fetch(`${API_BASE_URL}/school/media/`);
         if (!mediaRes.ok) throw new Error('Erreur chargement médias');
         const mediaData = await mediaRes.json();
         setMedia(mediaData.data || []);
 
         try {
-          const guideRes = await fetch('/api/school/student-guide/');
+          const guideRes = await fetch(`${API_BASE_URL}/school/student-guide/`);
           if (guideRes.ok) {
             const guideData = await guideRes.json();
             setGuide(guideData);

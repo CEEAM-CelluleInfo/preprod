@@ -95,6 +95,25 @@ export function getDefaultHeaders(includeAuth: boolean = false): HeadersInit {
   return headers;
 }
 
+async function parseResponseBody<T>(response: Response): Promise<T | null> {
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  const text = await response.text();
+
+  if (!text.trim()) {
+    return null;
+  }
+
+  if (contentType.includes('application/json')) {
+    return JSON.parse(text) as T;
+  }
+
+  throw new ApiError(response.status, text);
+}
+
 /**
  * Effectue une requête GET vers l'API avec refresh automatique du token
  */
@@ -119,11 +138,11 @@ export async function apiGet<T>(endpoint: string, requireAuth: boolean = false):
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Erreur réseau' }));
+    const error = (await parseResponseBody<{ detail?: string }>(response).catch(() => null)) || { detail: 'Erreur réseau' };
     throw new ApiError(response.status, error.detail || 'Erreur lors de la requête');
   }
 
-  return response.json();
+  return (await parseResponseBody<T>(response)) as T;
 }
 
 /**
@@ -174,11 +193,11 @@ export async function apiPost<T>(
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Erreur réseau' }));
+    const error = (await parseResponseBody<Record<string, any>>(response).catch(() => null)) || { detail: 'Erreur réseau' };
     throw new ApiError(response.status, error.detail || 'Erreur lors de la requête', error);
   }
 
-  return response.json();
+  return (await parseResponseBody<T>(response)) as T;
 }
 
 /**
@@ -213,11 +232,11 @@ export async function apiPostFormData<T>(
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Erreur reseau' }));
+    const error = (await parseResponseBody<Record<string, any>>(response).catch(() => null)) || { detail: 'Erreur reseau' };
     throw new ApiError(response.status, error.detail || 'Erreur lors de la requete', error);
   }
 
-  return response.json();
+  return (await parseResponseBody<T>(response)) as T;
 }
 
 /**
@@ -249,7 +268,7 @@ export async function apiPut<T>(
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Erreur réseau' }));
+    const error = (await parseResponseBody<Record<string, any>>(response).catch(() => null)) || { detail: 'Erreur réseau' };
     const apiError = new ApiError(
       response.status, 
       error.detail || error.message || 'Erreur lors de la requête',
@@ -260,7 +279,7 @@ export async function apiPut<T>(
     throw apiError;
   }
 
-  return response.json();
+  return (await parseResponseBody<T>(response)) as T;
 }
 
 /**
@@ -279,11 +298,11 @@ export async function apiPatch<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Erreur réseau' }));
+    const error = (await parseResponseBody<Record<string, any>>(response).catch(() => null)) || { detail: 'Erreur réseau' };
     throw new ApiError(response.status, error.detail || error.error || 'Erreur lors de la requête', error);
   }
 
-  return response.json();
+  return (await parseResponseBody<T>(response)) as T;
 }
 
 /**
@@ -297,7 +316,7 @@ export async function apiDelete(endpoint: string, requireAuth: boolean = true): 
   });
 
   if (!response.ok && response.status !== 204) {
-    const error = await response.json().catch(() => ({ detail: 'Erreur réseau' }));
+    const error = (await parseResponseBody<{ detail?: string }>(response).catch(() => null)) || { detail: 'Erreur réseau' };
     throw new ApiError(response.status, error.detail || 'Erreur lors de la requête');
   }
 }
