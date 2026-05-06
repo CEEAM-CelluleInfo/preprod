@@ -2314,53 +2314,44 @@ class UserCompetenceBulkDeleteView(APIView):
 # DASHBOARD
 # =====================================================
 
-# === CLASSE USERSTATSVIEW COMMENTÉE ===
-# class UserStatsView(APIView):
-#     """
-#     Statistiques personnelles de l'utilisateur connecté.
-#     GET /api/users/me/stats/
-#     """
-#     permission_classes = [IsAuthenticated]
-#     
-#     def get(self, request):
-#         """Récupère les statistiques de l'utilisateur."""
-#         user = request.user
-#         
-#         # Calculer les statistiques
-#         activites_participees = user.activity_registrations.filter(status='confirmed').count()
-#         votes_count = user.votes.count() if hasattr(user, 'votes') else 0
-#         contacts_laureats = 0  # TODO: implémenter les contacts
-#         contributions = user.activities_created.count() if hasattr(user, 'activities_created') else 0
-#         
-#         # Événements ce mois
-#         from django.utils import timezone
-#         from datetime import timedelta
-#         now = timezone.now()
-#         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-#         evenements_ce_mois = Activity.objects.filter(
-#             event_date__gte=start_of_month,
-#             event_date__lte=now + timedelta(days=30),
-#             is_published=True
-#         ).count()
-#         
-#         return Response({
-#             # Format pour le frontend ViewProfilUser/ViewProfilLaureat
-#             'activities': activites_participees,
-#             'votes': votes_count,
-#             'connections': contacts_laureats,
-#             'contributions': contributions,
-#             
-#             # Format original pour le dashboard
-#             'guides_consultes': 24,  # TODO: implémenter le tracking
-#             'guides_change': '+12%',
-#             'activites_participees': activites_participees,
-#             'activites_change': '+8%',
-#             'contacts_laureats': contacts_laureats,
-#             'contacts_change': '+5',
-#             'evenements_ce_mois': evenements_ce_mois,
-#             'evenements_change': '+2'
-#         })
-# === FIN CLASSE USERSTATSVIEW COMMENTÉE ===
+class UserStatsView(APIView):
+    """
+    Statistiques personnelles de l'utilisateur connecté.
+    GET /api/users/me/stats/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        now = timezone.now()
+        start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        activites_participees = user.activity_registrations.filter(status='confirmed').count()
+        votes_count = user.votes.count() if hasattr(user, 'votes') else 0
+        contacts_laureats = 0
+        contributions = user.activities_created.count() if hasattr(user, 'activities_created') else 0
+        evenements_ce_mois = Activity.objects.filter(
+            event_date__gte=start_of_month,
+            event_date__lte=now + timedelta(days=30),
+            is_published=True,
+        ).count()
+
+        return Response(
+            {
+                'activities': activites_participees,
+                'votes': votes_count,
+                'connections': contacts_laureats,
+                'contributions': contributions,
+                'guides_consultes': 24,
+                'guides_change': '+12%',
+                'activites_participees': activites_participees,
+                'activites_change': '+8%',
+                'contacts_laureats': contacts_laureats,
+                'contacts_change': '+0',
+                'evenements_ce_mois': evenements_ce_mois,
+                'evenements_change': '+0',
+            }
+        )
 
 
 class NotificationsListView(APIView):

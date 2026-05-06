@@ -151,9 +151,8 @@ urlpatterns = [
     # ENDPOINTS DASHBOARD
     # ====================================================
     
-    # === STATS USER COMMENTÉES ===
     # GET /api/users/me/stats/ - Statistiques de l'utilisateur
-    # path('users/me/stats/', views.UserStatsView.as_view(), name='user_stats'),
+    path('users/me/stats/', views.UserStatsView.as_view(), name='user_stats'),
     
     # GET /api/guides/ - Liste des guides
     path('guides/', views.GuidesView.as_view(), name='guides_list'),

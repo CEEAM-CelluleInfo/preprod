@@ -63,17 +63,8 @@ export class DashboardService {
    */
   static async getUserStats(): Promise<DashboardStats> {
     try {
-      return await apiGet<DashboardStats>('/user-stats/');
+      return await apiGet<DashboardStats>('/users/me/stats/', true);
     } catch (error: any) {
-      // Fallback si le backend expose les statistiques sous /users/me/stats/
-      if (error.status === 404) {
-        try {
-          return await apiGet<DashboardStats>('/users/me/stats/', true);
-        } catch (innerError) {
-          console.error('Erreur lors de la récupération des stats fallback:', innerError);
-        }
-      }
-
       console.error('Erreur lors de la récupération des stats:', error);
       // Retourner des valeurs par défaut
       return {
@@ -94,9 +85,16 @@ export class DashboardService {
    */
   static async getUpcomingActivities(): Promise<DashboardActivity[]> {
     try {
-      const response = await apiGet<{ results: any[] }>('/activities/?is_upcoming=true');
-      
-      return response.results.map(activity => {
+      const response = await apiGet<{ data?: any[]; results?: any[] } | any[]>('/activities/events/upcoming/');
+      const activities = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.results)
+            ? response.results
+            : [];
+
+      return activities.map(activity => {
         // Utiliser event_date du backend Django (format ISO datetime)
         const dateStr = activity.event_date || activity.date_activity || activity.date;
         const activityDate = dateStr ? new Date(dateStr) : new Date();
