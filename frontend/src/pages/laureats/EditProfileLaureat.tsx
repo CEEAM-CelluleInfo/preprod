@@ -74,6 +74,8 @@ const EditProfileLaureat = () => {
   // États pour historique et compétences (nouvelle approche relationnelle)
   const [historique, setHistorique] = useState<HistoriqueEntry[]>([]);
   const [historiqueLoading, setHistoriqueLoading] = useState(false);
+  const [editingHistoriqueId, setEditingHistoriqueId] = useState<number | null>(null);
+  const [editingHistoriqueEntry, setEditingHistoriqueEntry] = useState<HistoriqueEntry | null>(null);
   // Formulaire pour ajouter une nouvelle entrée d'historique
   const [newHistoriqueEntry, setNewHistoriqueEntry] = useState<Omit<HistoriqueEntry, 'id'>>({
     entryType: 'professional',
@@ -89,6 +91,8 @@ const EditProfileLaureat = () => {
   // États pour compétences (nouvelle approche relationnelle)
   const [competences, setCompetences] = useState<CompetenceGroup[]>([]);
   const [competencesLoading, setCompetencesLoading] = useState(false);
+  const [editingCompetenceId, setEditingCompetenceId] = useState<number | null>(null);
+  const [editingCompetence, setEditingCompetence] = useState<UserCompetence | null>(null);
   const [availableCategories, setAvailableCategories] = useState<CompetenceCategory[]>([]);
   // Formulaire pour ajouter une nouvelle compétence
   const [newCompetence, setNewCompetence] = useState<{
@@ -354,6 +358,24 @@ const EditProfileLaureat = () => {
     }));
   };
 
+  const handleEditHistoriqueFormChange = (field: keyof Omit<HistoriqueEntry, 'id'>, value: string | boolean) => {
+    setEditingHistoriqueEntry(prev => prev ? ({
+      ...prev,
+      [field]: value,
+      ...(field === 'isCurrent' && value ? { endDate: null } : {})
+    }) : prev);
+  };
+
+  const handleStartEditHistorique = (entry: HistoriqueEntry) => {
+    setEditingHistoriqueId(entry.id || null);
+    setEditingHistoriqueEntry({ ...entry });
+  };
+
+  const handleCancelEditHistorique = () => {
+    setEditingHistoriqueId(null);
+    setEditingHistoriqueEntry(null);
+  };
+
   const handleAddHistorique = async () => {
     if (!newHistoriqueEntry.title.trim() || !newHistoriqueEntry.startDate) {
       showCustomToast('error', 'Champs manquants', 'Veuillez remplir au moins le titre et la date de début.');
@@ -415,6 +437,39 @@ const EditProfileLaureat = () => {
     }
   };
 
+  const handleSaveHistorique = async () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser || !editingHistoriqueId || !editingHistoriqueEntry) return;
+
+    if (!editingHistoriqueEntry.title.trim() || !editingHistoriqueEntry.startDate) {
+      showCustomToast('error', 'Champs manquants', 'Veuillez remplir au moins le titre et la date de début.');
+      return;
+    }
+
+    setHistoriqueLoading(true);
+    try {
+      const updatedEntry = await ProfileService.updateHistoriqueEntry(currentUser.id, editingHistoriqueId, {
+        entry_type: editingHistoriqueEntry.entryType,
+        title: editingHistoriqueEntry.title.trim(),
+        organization: editingHistoriqueEntry.organization?.trim() || '',
+        location: editingHistoriqueEntry.location?.trim() || '',
+        start_date: editingHistoriqueEntry.startDate,
+        end_date: editingHistoriqueEntry.isCurrent ? null : editingHistoriqueEntry.endDate || null,
+        is_current: editingHistoriqueEntry.isCurrent,
+        description: editingHistoriqueEntry.description?.trim() || ''
+      });
+
+      setHistorique(prev => prev.map(item => item.id === editingHistoriqueId ? updatedEntry : item));
+      handleCancelEditHistorique();
+      showCustomToast('success', 'Historique mis à jour', 'L\'entrée a été modifiée avec succès.');
+    } catch (err: any) {
+      console.error('Erreur mise à jour historique:', err);
+      showCustomToast('error', 'Erreur', err.message || 'Erreur lors de la mise à jour.');
+    } finally {
+      setHistoriqueLoading(false);
+    }
+  };
+
   // ========== COMPÉTENCES ==========
   const handleAddCompetence = async () => {
     if (!newCompetence.name.trim()) {
@@ -452,6 +507,52 @@ const EditProfileLaureat = () => {
     } catch (err: any) {
       console.error('Erreur ajout compétence:', err);
       showCustomToast('error', 'Erreur', err.message || 'Erreur lors de l\'ajout.');
+    } finally {
+      setCompetencesLoading(false);
+    }
+  };
+
+  const handleStartEditCompetence = (competence: UserCompetence) => {
+    setEditingCompetenceId(competence.id || null);
+    setEditingCompetence({ ...competence });
+  };
+
+  const handleCancelEditCompetence = () => {
+    setEditingCompetenceId(null);
+    setEditingCompetence(null);
+  };
+
+  const handleSaveCompetence = async () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser || !editingCompetenceId || !editingCompetence) return;
+
+    if (!editingCompetence.name.trim()) {
+      showCustomToast('error', 'Nom requis', 'Veuillez saisir le nom de la compétence.');
+      return;
+    }
+
+    setCompetencesLoading(true);
+    try {
+      const updatedCompetence = await ProfileService.updateCompetence(currentUser.id, editingCompetenceId, {
+        name: editingCompetence.name.trim(),
+        level: editingCompetence.level || 'intermediate'
+      });
+
+      setCompetences(prev => prev.map(group => ({
+        ...group,
+        competences: group.competences.map(item => item.id === editingCompetenceId ? {
+          ...item,
+          ...updatedCompetence,
+          categoryId: item.categoryId,
+          categoryName: item.categoryName,
+          levelDisplay: updatedCompetence.levelDisplay || item.levelDisplay,
+        } : item)
+      })));
+      handleCancelEditCompetence();
+      showCustomToast('success', 'Compétence mise à jour', 'La compétence a été modifiée avec succès.');
+    } catch (err: any) {
+      console.error('Erreur mise à jour compétence:', err);
+      showCustomToast('error', 'Erreur', err.message || 'Erreur lors de la mise à jour.');
     } finally {
       setCompetencesLoading(false);
     }
@@ -1109,31 +1210,130 @@ const EditProfileLaureat = () => {
                         key={item.id}
                         className="flex items-start gap-4 p-4 bg-white rounded-lg border border-orange-200 shadow-sm"
                       >
-                        <div className="flex-shrink-0 flex flex-col gap-1">
-                          <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full border border-orange-300">
-                            {HISTORIQUE_TYPE_LABELS[item.entryType] || item.entryType}
-                          </span>
-                          <span className="text-xs text-gray-500 text-center">
-                            {item.startDate}{item.isCurrent ? ' - Présent' : item.endDate ? ` - ${item.endDate}` : ''}
-                          </span>
-                        </div>
-                        <div className="flex-grow">
-                          <p className="font-bold text-gray-800">{item.title}</p>
-                          {item.organization && (
-                            <p className="text-sm text-gray-600">{item.organization}{item.location ? `, ${item.location}` : ''}</p>
-                          )}
-                          {item.description && (
-                            <p className="text-sm text-gray-500 mt-1">{item.description}</p>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => item.id && handleRemoveHistorique(item.id)}
-                          disabled={historiqueLoading}
-                          className="text-red-500 hover:text-red-700 disabled:opacity-50"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
+                        {editingHistoriqueId === item.id && editingHistoriqueEntry ? (
+                          <div className="flex-grow space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <select
+                                value={editingHistoriqueEntry.entryType}
+                                onChange={(e) => handleEditHistoriqueFormChange('entryType', e.target.value as HistoriqueEntryType)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              >
+                                {Object.entries(HISTORIQUE_TYPE_LABELS).map(([value, label]) => (
+                                  <option key={value} value={value}>{label}</option>
+                                ))}
+                              </select>
+                              <input
+                                type="text"
+                                value={editingHistoriqueEntry.title}
+                                onChange={(e) => handleEditHistoriqueFormChange('title', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                placeholder="Titre"
+                              />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                value={editingHistoriqueEntry.organization}
+                                onChange={(e) => handleEditHistoriqueFormChange('organization', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                placeholder="Organisation"
+                              />
+                              <input
+                                type="text"
+                                value={editingHistoriqueEntry.location}
+                                onChange={(e) => handleEditHistoriqueFormChange('location', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                placeholder="Lieu"
+                              />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <input
+                                type="date"
+                                value={editingHistoriqueEntry.startDate}
+                                onChange={(e) => handleEditHistoriqueFormChange('startDate', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                              <input
+                                type="date"
+                                value={editingHistoriqueEntry.endDate || ''}
+                                onChange={(e) => handleEditHistoriqueFormChange('endDate', e.target.value)}
+                                disabled={editingHistoriqueEntry.isCurrent}
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-sm ${editingHistoriqueEntry.isCurrent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                              />
+                              <label className="flex items-center gap-2 text-sm text-gray-700">
+                                <input
+                                  type="checkbox"
+                                  checked={editingHistoriqueEntry.isCurrent}
+                                  onChange={(e) => handleEditHistoriqueFormChange('isCurrent', e.target.checked)}
+                                />
+                                En cours
+                              </label>
+                            </div>
+                            <textarea
+                              value={editingHistoriqueEntry.description}
+                              onChange={(e) => handleEditHistoriqueFormChange('description', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              rows={2}
+                              placeholder="Description"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={handleCancelEditHistorique}
+                                disabled={historiqueLoading}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
+                              >
+                                Annuler
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSaveHistorique}
+                                disabled={historiqueLoading}
+                                className="px-3 py-2 bg-orange-500 text-white rounded-lg text-sm disabled:opacity-50"
+                              >
+                                Enregistrer
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex-shrink-0 flex flex-col gap-1">
+                              <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full border border-orange-300">
+                                {HISTORIQUE_TYPE_LABELS[item.entryType] || item.entryType}
+                              </span>
+                              <span className="text-xs text-gray-500 text-center">
+                                {item.startDate}{item.isCurrent ? ' - Présent' : item.endDate ? ` - ${item.endDate}` : ''}
+                              </span>
+                            </div>
+                            <div className="flex-grow">
+                              <p className="font-bold text-gray-800">{item.title}</p>
+                              {item.organization && (
+                                <p className="text-sm text-gray-600">{item.organization}{item.location ? `, ${item.location}` : ''}</p>
+                              )}
+                              {item.description && (
+                                <p className="text-sm text-gray-500 mt-1">{item.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditHistorique(item)}
+                                disabled={historiqueLoading}
+                                className="text-orange-500 hover:text-orange-700 disabled:opacity-50"
+                              >
+                                <i className="fas fa-pen"></i>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => item.id && handleRemoveHistorique(item.id)}
+                                disabled={historiqueLoading}
+                                className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))
                   )}
@@ -1300,20 +1500,66 @@ const EditProfileLaureat = () => {
                               key={competence.id}
                               className="flex items-center gap-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm"
                             >
-                              <span>{competence.name}</span>
-                              {competence.level && (
-                                <span className="text-xs bg-green-600 px-2 py-0.5 rounded-full">
-                                  {COMPETENCE_LEVEL_LABELS[competence.level] || competence.level}
-                                </span>
+                              {editingCompetenceId === competence.id && editingCompetence ? (
+                                <>
+                                  <input
+                                    type="text"
+                                    value={editingCompetence.name}
+                                    onChange={(e) => setEditingCompetence(prev => prev ? ({ ...prev, name: e.target.value }) : prev)}
+                                    className="px-2 py-1 rounded text-gray-800 text-sm min-w-[140px]"
+                                  />
+                                  <select
+                                    value={editingCompetence.level || 'intermediate'}
+                                    onChange={(e) => setEditingCompetence(prev => prev ? ({ ...prev, level: e.target.value as CompetenceLevel }) : prev)}
+                                    className="px-2 py-1 rounded text-gray-800 text-xs"
+                                  >
+                                    {Object.entries(COMPETENCE_LEVEL_LABELS).map(([value, label]) => (
+                                      <option key={value} value={value}>{label}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveCompetence}
+                                    disabled={competencesLoading}
+                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                  >
+                                    <i className="fas fa-check text-xs"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEditCompetence}
+                                    disabled={competencesLoading}
+                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                  >
+                                    <i className="fas fa-times text-xs"></i>
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <span>{competence.name}</span>
+                                  {competence.level && (
+                                    <span className="text-xs bg-green-600 px-2 py-0.5 rounded-full">
+                                      {COMPETENCE_LEVEL_LABELS[competence.level] || competence.level}
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditCompetence(competence)}
+                                    disabled={competencesLoading}
+                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                  >
+                                    <i className="fas fa-pen text-xs"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => competence.id && handleRemoveCompetence(competence.id)}
+                                    disabled={competencesLoading}
+                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                  >
+                                    <i className="fas fa-times text-xs"></i>
+                                  </button>
+                                </>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => competence.id && handleRemoveCompetence(competence.id)}
-                                disabled={competencesLoading}
-                                className="text-white hover:text-gray-200 disabled:opacity-50"
-                              >
-                                <i className="fas fa-times text-xs"></i>
-                              </button>
                             </div>
                           ))}
                         </div>
