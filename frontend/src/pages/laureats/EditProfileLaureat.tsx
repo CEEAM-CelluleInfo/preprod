@@ -21,6 +21,13 @@ import { AuthService } from '../../services/authService';
 import { getAbsoluteMediaUrl } from '@/lib/utils';
 import { API_BASE_URL } from '@/services/api.config';
 
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png'];
+
+function isSupportedImageFile(file: File): boolean {
+  const fileName = file.name.toLowerCase();
+  return SUPPORTED_IMAGE_TYPES.includes(file.type) || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+}
+
 const EditProfileLaureat = () => {
   const navigate = useNavigate();
   
@@ -238,7 +245,7 @@ const EditProfileLaureat = () => {
     if (!file) return;
     
     // Validation
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+    if (!isSupportedImageFile(file)) {
       setImageError('Format non supporté. Utilisez JPG ou PNG.');
       showCustomToast('error', 'Format non supporté', 'Utilisez JPG ou PNG.');
       return;
@@ -259,8 +266,9 @@ const EditProfileLaureat = () => {
       }
       
       const result = await ProfileService.uploadLaureatPhoto(currentUser.id, file);
-      setProfileImage(result.photoUrl);
-      AuthService.updateStoredUser({ avatar_url: result.photoUrl });
+      const absolutePhotoUrl = getAbsoluteMediaUrl(result.photoUrl);
+      setProfileImage(absolutePhotoUrl);
+      AuthService.updateStoredUser({ avatar_url: absolutePhotoUrl });
       showCustomToast('success', 'Photo mise à jour', 'Votre photo de profil a été modifiée avec succès.');
     } catch (err: any) {
       console.error('Erreur upload photo:', err);

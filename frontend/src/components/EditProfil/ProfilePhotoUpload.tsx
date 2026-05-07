@@ -4,6 +4,13 @@ import { ProfileService } from "@/services/profileService";
 import { AuthService } from "@/services/authService";
 import { getAbsoluteMediaUrl } from "@/lib/utils";
 
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png'];
+
+function isSupportedImageFile(file: File): boolean {
+  const fileName = file.name.toLowerCase();
+  return SUPPORTED_IMAGE_TYPES.includes(file.type) || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png');
+}
+
 const ProfilePhotoUpload = () => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -22,7 +29,7 @@ const ProfilePhotoUpload = () => {
     if (!file) return;
 
     // Validation côté client
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+    if (!isSupportedImageFile(file)) {
       setError('Format non supporté. Utilisez JPG ou PNG.');
       return;
     }
@@ -37,10 +44,11 @@ const ProfilePhotoUpload = () => {
     try {
       // Upload vers l'API
       const result = await ProfileService.uploadProfilePhoto(file);
-      setPhoto(result.photoUrl);
+      const absolutePhotoUrl = getAbsoluteMediaUrl(result.photoUrl);
+      setPhoto(absolutePhotoUrl);
       
       // Mettre à jour le cache utilisateur
-      AuthService.updateStoredUser({ avatar_url: result.photoUrl });
+      AuthService.updateStoredUser({ avatar_url: absolutePhotoUrl });
     } catch (err: any) {
       console.error('Erreur upload photo:', err);
       setError(err.message || 'Erreur lors de l\'upload');
@@ -109,7 +117,7 @@ const ProfilePhotoUpload = () => {
               <input
                 type="file"
                 id="photo-upload"
-                accept="image/jpeg,image/png"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 onChange={handlePhotoChange}
                 className="hidden"
                 disabled={isUploading}

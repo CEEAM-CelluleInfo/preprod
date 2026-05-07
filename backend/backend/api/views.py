@@ -92,6 +92,34 @@ def _resolve_media_url(value: str | None) -> str:
         return value
 
 
+def _build_absolute_media_url(request, value: str | None) -> str:
+    resolved = _resolve_media_url(value)
+    if not resolved:
+        return ""
+    if resolved.startswith("http://") or resolved.startswith("https://"):
+        return resolved
+    return request.build_absolute_uri(resolved)
+
+
+def _is_supported_profile_image(photo) -> bool:
+    allowed_content_types = {
+        'image/jpeg',
+        'image/jpg',
+        'image/pjpeg',
+        'image/png',
+        'image/x-png',
+    }
+    allowed_extensions = {'.jpg', '.jpeg', '.png'}
+
+    file_name = (getattr(photo, 'name', '') or '').lower()
+    content_type = (getattr(photo, 'content_type', '') or '').lower()
+
+    return (
+        content_type in allowed_content_types
+        or any(file_name.endswith(extension) for extension in allowed_extensions)
+    )
+
+
 # =====================================================
 # PERMISSIONS PERSONNALISÉES
 # =====================================================
@@ -1723,7 +1751,7 @@ class UserProfilePhotoView(APIView):
         photo = request.FILES['photo']
         
         # Validation du type de fichier
-        if photo.content_type not in ['image/jpeg', 'image/png']:
+        if not _is_supported_profile_image(photo):
             return Response(
                 {'error': 'Format non supporté. Utilisez JPG ou PNG.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -1747,7 +1775,7 @@ class UserProfilePhotoView(APIView):
         saved_name = default_storage.save(filename, photo)
         request.user.avatar_url = saved_name
         request.user.save()
-        full_photo_url = default_storage.url(saved_name)
+        full_photo_url = _build_absolute_media_url(request, saved_name)
         
         return Response({
             'photoUrl': full_photo_url,
