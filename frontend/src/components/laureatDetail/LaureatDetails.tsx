@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, GraduationCap, MapPin, Mail, Linkedin, Quote, Phone, Globe } from "lucide-react";
+import { apiGet } from "@/services/api.config";
 
 // Types
 interface AcademicEntry {
@@ -189,11 +190,7 @@ const LaureatDetails = () => {
     const fetchProfile = async () => {
       if (!id) return;
       try {
-        const res = await fetch(`/api/laureats/${id}/details/`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Erreur de chargement");
-        const data = await res.json();
+        const data = await apiGet<any>(`/laureats/${id}/details/`, true);
 
         const rawHistorique = data.historique || data.history || [];
         const academicDataFromHistorique = Array.isArray(rawHistorique)
@@ -225,8 +222,8 @@ const LaureatDetails = () => {
           nationality: data.nationality || '',
           competences: Array.isArray(data.competences) ? data.competences : [],
         });
-      } catch (err) {
-        setError("Impossible de charger le profil.");
+      } catch (err: any) {
+        setError(err?.detail || err?.message || "Impossible de charger le profil.");
       } finally {
         setLoading(false);
       }
