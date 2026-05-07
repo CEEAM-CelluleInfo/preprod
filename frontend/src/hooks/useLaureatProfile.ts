@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { ProfileService } from '@/services/profileService';
 import { AuthService } from '@/services/authService';
+import { apiGet } from '@/services/api.config';
 import { LaureatProfile, LaureatViewProfile, HistoriqueEntry, CompetenceGroup } from '@/types/laureats-connected';
 import { getAbsoluteMediaUrl } from '@/lib/utils';
 
@@ -96,24 +97,19 @@ export function useLaureatProfile(): UseLaureatProfileReturn {
       return;
     }
 
-    // ✅ Appel direct au nouvel endpoint
-    const response = await fetch('/api/laureats/me/profile/', {
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    });
+    let apiProfile: LaureatViewProfile;
 
-    // ✅ Gestion des erreurs 403/404
-    if (response.status === 403 || response.status === 404) {
-      setProfile(null);
-      setIsLoading(false);
-      return;
+    try {
+      apiProfile = await apiGet<LaureatViewProfile>('/laureats/me/profile/', true);
+    } catch (apiError: any) {
+      if (apiError?.status === 403 || apiError?.status === 404) {
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      throw apiError;
     }
-
-    if (!response.ok) {
-      throw new Error(`Erreur HTTP ${response.status}`);
-    }
-
-    const apiProfile = await response.json();
 
     // Transformation des données reçues
     const transformedProfile: LaureatProfileData = {

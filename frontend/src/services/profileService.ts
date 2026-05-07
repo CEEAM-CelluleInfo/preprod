@@ -3,7 +3,7 @@
  * ==========================================================================
  */
 
-import { apiGet, apiPut, apiPost, apiDelete, API_BASE_URL } from './api.config';
+import { apiGet, apiPut, apiPost, apiDelete, apiPostFormData, API_BASE_URL } from './api.config';
 import { 
   UserProfile, 
   LaureatProfile, 
@@ -62,21 +62,7 @@ export class ProfileService {
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await fetch(`${API_BASE_URL}/profile/photo/`, {
-      method: 'POST',
-      credentials: 'include', // Envoie les cookies JWT automatiquement
-      body: formData,
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Utilisateur non connecté');
-      }
-      const error = await response.json().catch(() => ({ detail: 'Erreur upload' }));
-      throw new Error(error.detail || 'Erreur lors de l\'upload');
-    }
-
-    return response.json();
+    return apiPostFormData<{ photoUrl: string }>('/profile/photo/', formData, true);
   }
 
   /**
@@ -87,21 +73,7 @@ export class ProfileService {
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await fetch(`${API_BASE_URL}/laureats/${userId}/profile/image/`, {
-      method: 'POST',
-      credentials: 'include', // Envoie les cookies JWT automatiquement
-      body: formData,
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Utilisateur non connecté');
-      }
-      const error = await response.json().catch(() => ({ detail: 'Erreur upload' }));
-      throw new Error(error.detail || 'Erreur lors de l\'upload');
-    }
-
-    return response.json();
+    return apiPostFormData<{ photoUrl: string }>(`/laureats/${userId}/profile/image/`, formData, true);
   }
 
   /**
