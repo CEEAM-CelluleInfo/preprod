@@ -17,6 +17,67 @@ import {
   CompetenceLevel,
 } from '@/types/laureats-connected';
 
+async function loadImageElement(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Impossible de lire l\'image sélectionnée.'));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+async function normalizeProfilePhoto(file: File): Promise<File> {
+  const fileName = file.name.toLowerCase();
+  const needsConversion = file.type === 'image/png'
+    || file.type === 'image/x-png'
+    || fileName.endsWith('.png')
+    || file.size > 1024 * 1024;
+
+  if (!needsConversion) {
+    return file;
+  }
+
+  const image = await loadImageElement(file);
+  const maxDimension = 1200;
+  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return file;
+  }
+
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((result) => resolve(result), 'image/jpeg', 0.82);
+  });
+
+  if (!blob) {
+    return file;
+  }
+
+  const normalizedName = file.name.replace(/\.[^.]+$/, '') || 'profile-photo';
+  return new File([blob], `${normalizedName}.jpg`, { type: 'image/jpeg' });
+}
+
 /**
  * Service pour gérer les profils utilisateurs
  */
@@ -59,8 +120,9 @@ export class ProfileService {
    * POST /api/profile/photo/
    */
   static async uploadProfilePhoto(file: File): Promise<{ photoUrl: string }> {
+    const normalizedFile = await normalizeProfilePhoto(file);
     const formData = new FormData();
-    formData.append('photo', file);
+    formData.append('photo', normalizedFile);
 
     return apiPostFormData<{ photoUrl: string }>('/profile/photo/', formData, true);
   }
@@ -70,8 +132,9 @@ export class ProfileService {
    * POST /api/laureats/{userId}/profile/image/
    */
   static async uploadLaureatPhoto(userId: number, file: File): Promise<{ photoUrl: string }> {
+    const normalizedFile = await normalizeProfilePhoto(file);
     const formData = new FormData();
-    formData.append('photo', file);
+    formData.append('photo', normalizedFile);
 
     return apiPostFormData<{ photoUrl: string }>(`/laureats/${userId}/profile/image/`, formData, true);
   }

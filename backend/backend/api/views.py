@@ -3,6 +3,7 @@ Views Django REST Framework - Plateforme CEEAM
 """
 
 import json
+import logging
 import re
 import uuid
 from django.db import models
@@ -67,6 +68,9 @@ from .models import AboutStat, Leader, AboutContent
 from .serializers import AboutStatSerializer, LeaderSerializer, AboutContentSerializer
 from .models import Club, AcademicDate, PracticalInfo, SchoolMedia, StudentGuide
 from .serializers import ClubListSerializer, AcademicCalendarSerializer, PracticalInfoSerializer, SchoolMediaSerializer, StudentGuideSerializer
+
+
+logger = logging.getLogger(__name__)
 
 
 def _storage_name_from_value(value: str | None) -> str:
@@ -1768,14 +1772,24 @@ class UserProfilePhotoView(APIView):
         ext = photo.name.split('.')[-1]
         filename = f"avatars/{request.user.id}_{uuid.uuid4().hex[:8]}.{ext}"
 
-        previous_avatar = _storage_name_from_value(request.user.avatar_url)
-        if previous_avatar and default_storage.exists(previous_avatar):
-            default_storage.delete(previous_avatar)
+        try:
+            previous_avatar = _storage_name_from_value(request.user.avatar_url)
+            if previous_avatar and default_storage.exists(previous_avatar):
+                default_storage.delete(previous_avatar)
 
-        saved_name = default_storage.save(filename, photo)
-        request.user.avatar_url = saved_name
-        request.user.save()
-        full_photo_url = _build_absolute_media_url(request, saved_name)
+            saved_name = default_storage.save(filename, photo)
+            request.user.avatar_url = saved_name
+            request.user.save()
+            full_photo_url = _build_absolute_media_url(request, saved_name)
+        except Exception as exc:
+            logger.exception('Erreur pendant l\'upload de photo de profil utilisateur')
+            return Response(
+                {
+                    'error': 'Erreur lors de l\'enregistrement de la photo.',
+                    'detail': str(exc),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         return Response({
             'photoUrl': full_photo_url,
