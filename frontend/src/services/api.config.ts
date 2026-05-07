@@ -5,23 +5,9 @@
  */
 
 // URL de base de l'API Django
-// Sur le domaine public, forcer /api pour éviter le CORS quand Nginx reverse-proxy déjà le backend.
-function resolveApiBaseUrl(): string {
-  const configuredBaseUrl = import.meta.env.VITE_API_URL?.trim();
-
-  if (typeof window !== 'undefined') {
-    const currentHost = window.location.hostname;
-    const isPublicFrontendHost = currentHost === 'ceaam.org' || currentHost === 'www.ceaam.org';
-
-    if (isPublicFrontendHost) {
-      return '/api';
-    }
-  }
-
-  return configuredBaseUrl || '/api';
-}
-
-export const API_BASE_URL = resolveApiBaseUrl();
+// En développement, utiliser le proxy Vite (même origine = pas de problème de cookies)
+// En production, utiliser l'URL complète du backend
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Clés de stockage local (uniquement pour données non-sensibles)
 export const STORAGE_KEYS = {
