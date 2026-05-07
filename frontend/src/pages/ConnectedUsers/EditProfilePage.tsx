@@ -14,6 +14,16 @@ import InterestsSection from "@/components/EditProfil/InterestsSection";
 // === IMPORT COMMENTÉ ===
 // import LookingForSection from "@/components/EditProfil/LookingForSection";
 import FormActions from "@/components/EditProfil/FormActions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { initialFormData } from "@/data/profileFormData";
 import { ProfileService } from "@/services/profileService";
 import { AuthService } from "@/services/authService";
@@ -138,6 +148,7 @@ const EditProfilePage = () => {
   const [competencesLoading, setCompetencesLoading] = useState(false);
   const [editingCompetenceId, setEditingCompetenceId] = useState<number | null>(null);
   const [editingCompetence, setEditingCompetence] = useState<UserCompetence | null>(null);
+  const [competenceToDelete, setCompetenceToDelete] = useState<UserCompetence | null>(null);
   const [availableCategories, setAvailableCategories] = useState<CompetenceCategory[]>([]);
   const [newCompetence, setNewCompetence] = useState<{
     categoryId: number | null;
@@ -454,9 +465,14 @@ const EditProfilePage = () => {
     }
   };
 
+  const handleRequestRemoveCompetence = (competence: UserCompetence) => {
+    setCompetenceToDelete(competence);
+  };
+
   const handleRemoveCompetence = async (competenceId: number) => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser) return;
+    if (!window.confirm('Voulez-vous vraiment supprimer cette compétence ?')) return;
 
     setCompetencesLoading(true);
     try {
@@ -472,6 +488,7 @@ const EditProfilePage = () => {
       console.error('Erreur suppression compétence:', err);
       showCustomToast('error', 'Erreur', err.message || 'Erreur lors de la suppression.');
     } finally {
+      setCompetenceToDelete(null);
       setCompetencesLoading(false);
     }
   };
@@ -868,7 +885,7 @@ const EditProfilePage = () => {
                               <button type="button" onClick={() => handleStartEditCompetence(competence)} disabled={competencesLoading} className="px-2 py-0.5 bg-white text-green-700 rounded text-xs font-medium disabled:opacity-50">
                                 Modifier
                               </button>
-                              <button type="button" onClick={() => competence.id && handleRemoveCompetence(competence.id)} disabled={competencesLoading} className="px-2 py-0.5 border border-white/70 text-white rounded text-xs font-medium disabled:opacity-50">
+                              <button type="button" onClick={() => handleRequestRemoveCompetence(competence)} disabled={competencesLoading} className="px-2 py-0.5 border border-white/70 text-white rounded text-xs font-medium disabled:opacity-50">
                                 Supprimer
                               </button>
                             </>
@@ -953,6 +970,34 @@ const EditProfilePage = () => {
           onSave={handleSave}
           isSaving={isSaving}
         />
+
+        <AlertDialog open={!!competenceToDelete} onOpenChange={(open) => !open && setCompetenceToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer cette compétence ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {competenceToDelete
+                  ? `La compétence "${competenceToDelete.name}" sera supprimée de votre profil.`
+                  : 'Cette compétence sera supprimée de votre profil.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={competencesLoading}>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={competencesLoading || !competenceToDelete?.id}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (competenceToDelete?.id) {
+                    void handleRemoveCompetence(competenceToDelete.id);
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {competencesLoading ? 'Suppression...' : 'Supprimer'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
       
       <Footer />

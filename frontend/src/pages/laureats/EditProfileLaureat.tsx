@@ -20,6 +20,16 @@ import { ProfileService } from '../../services/profileService';
 import { AuthService } from '../../services/authService';
 import { getAbsoluteMediaUrl } from '@/lib/utils';
 import { API_BASE_URL } from '@/services/api.config';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png'];
 
@@ -93,6 +103,7 @@ const EditProfileLaureat = () => {
   const [competencesLoading, setCompetencesLoading] = useState(false);
   const [editingCompetenceId, setEditingCompetenceId] = useState<number | null>(null);
   const [editingCompetence, setEditingCompetence] = useState<UserCompetence | null>(null);
+  const [competenceToDelete, setCompetenceToDelete] = useState<UserCompetence | null>(null);
   const [availableCategories, setAvailableCategories] = useState<CompetenceCategory[]>([]);
   // Formulaire pour ajouter une nouvelle compétence
   const [newCompetence, setNewCompetence] = useState<{
@@ -522,6 +533,10 @@ const EditProfileLaureat = () => {
     setEditingCompetence(null);
   };
 
+  const handleRequestRemoveCompetence = (competence: UserCompetence) => {
+    setCompetenceToDelete(competence);
+  };
+
   const handleSaveCompetence = async () => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser || !editingCompetenceId || !editingCompetence) return;
@@ -577,6 +592,7 @@ const EditProfileLaureat = () => {
       console.error('Erreur suppression compétence:', err);
       showCustomToast('error', 'Erreur', err.message || 'Erreur lors de la suppression.');
     } finally {
+      setCompetenceToDelete(null);
       setCompetencesLoading(false);
     }
   };
@@ -1552,7 +1568,7 @@ const EditProfileLaureat = () => {
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => competence.id && handleRemoveCompetence(competence.id)}
+                                    onClick={() => handleRequestRemoveCompetence(competence)}
                                     disabled={competencesLoading}
                                     className="px-2 py-0.5 border border-white/70 text-white rounded text-xs font-medium disabled:opacity-50"
                                   >
@@ -1817,6 +1833,34 @@ const EditProfileLaureat = () => {
               </button>
             </div>
           </form>
+
+          <AlertDialog open={!!competenceToDelete} onOpenChange={(open) => !open && setCompetenceToDelete(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Supprimer cette compétence ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {competenceToDelete
+                    ? `La compétence "${competenceToDelete.name}" sera supprimée de votre profil.`
+                    : 'Cette compétence sera supprimée de votre profil.'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={competencesLoading}>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={competencesLoading || !competenceToDelete?.id}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (competenceToDelete?.id) {
+                      void handleRemoveCompetence(competenceToDelete.id);
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {competencesLoading ? 'Suppression...' : 'Supprimer'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </main>
 
