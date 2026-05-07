@@ -1,11 +1,22 @@
 
 from pathlib import Path
 import os
-from decouple import AutoConfig
+from decouple import AutoConfig, Config, RepositoryEnv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-config = AutoConfig(search_path=Path(__file__).resolve().parent)
+SETTINGS_DIR = Path(__file__).resolve().parent
+
+
+def build_config():
+    for env_dir in (SETTINGS_DIR, BASE_DIR, BASE_DIR.parent):
+        env_path = env_dir / '.env'
+        if env_path.exists():
+            return Config(RepositoryEnv(str(env_path)))
+    return AutoConfig(search_path=SETTINGS_DIR)
+
+
+config = build_config()
 
 
 # Quick-start development settings - unsuitable for production
