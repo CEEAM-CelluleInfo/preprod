@@ -1253,7 +1253,7 @@ class RegisterView(APIView):
 
         if email:
             try:
-                existing_user = User.objects.get(email=email)
+                existing_user = User.objects.get(email__iexact=email)
 
                 if not existing_user.email_verified:
                     # ✅ On ne touche à RIEN du compte existant
@@ -1261,11 +1261,17 @@ class RegisterView(APIView):
                     verification_token = EmailVerificationTokenService.create_verification_token(existing_user)
                     frontend_url = request.data.get('frontend_url', getattr(settings, 'FRONTEND_URL', 'http://localhost:5173'))
 
-                    EmailService.send_verification_email(
+                    email_sent = EmailService.send_verification_email(
                         user=existing_user,
                         verification_token=verification_token,
                         frontend_url=frontend_url
                     )
+
+                    if not email_sent:
+                        return Response({
+                            'message': "Le compte existe, mais l'email de vérification n'a pas pu être envoyé.",
+                            'registration_status': 'email_delivery_failed',
+                        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
                     return Response({
                         'message': 'Un email de vérification a été envoyé.',
@@ -1291,11 +1297,19 @@ class RegisterView(APIView):
             verification_token = EmailVerificationTokenService.create_verification_token(user)
             frontend_url = request.data.get('frontend_url', getattr(settings, 'FRONTEND_URL', 'http://localhost:5173'))
 
-            EmailService.send_verification_email(
+            email_sent = EmailService.send_verification_email(
                 user=user,
                 verification_token=verification_token,
                 frontend_url=frontend_url
             )
+
+            if not email_sent:
+                return Response({
+                    'message': "Compte créé, mais l'email de vérification n'a pas pu être envoyé.",
+                    'registration_status': 'email_delivery_failed',
+                    'user': UserSerializer(user).data,
+                    'email_verified': user.email_verified,
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
             return Response({
                 'message': 'Inscription réussie ! Un email de vérification a été envoyé.',
@@ -1323,7 +1337,7 @@ class LoginView(APIView):
         password = serializer.validated_data['password']
         remember_me = serializer.validated_data.get('rememberMe', False)
 
-        existing_user = User.objects.filter(email=email).first()
+        existing_user = User.objects.filter(email__iexact=email).first()
 
         if existing_user is None:
             return Response(
@@ -1334,7 +1348,7 @@ class LoginView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        user = authenticate(request, username=email, password=password)
+        user = authenticate(request, username=existing_user.email, password=password)
         
         if user is None:
             return Response(
@@ -1581,15 +1595,20 @@ class ResendVerificationEmailView(APIView):
         email = serializer.validated_data['email']
         
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
             verification_token = EmailVerificationTokenService.create_verification_token(user)
             frontend_url = request.data.get('frontend_url', getattr(settings, 'FRONTEND_URL', 'http://localhost:5173'))
             
-            EmailService.send_verification_email(
+            email_sent = EmailService.send_verification_email(
                 user=user,
                 verification_token=verification_token,
                 frontend_url=frontend_url
             )
+            if not email_sent:
+                return Response(
+                    {'message': "L'email de vérification n'a pas pu être envoyé. Réessayez plus tard."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
         except User.DoesNotExist:
             pass
         
@@ -1618,15 +1637,21 @@ class PasswordResetRequestView(APIView):
         email = serializer.validated_data['email']
         
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
             reset_token = PasswordResetTokenService.create_reset_token(user)
             frontend_url = request.data.get('frontend_url', getattr(settings, 'FRONTEND_URL', 'http://localhost:5173'))
             
-            EmailService.send_password_reset_email(
+            email_sent = EmailService.send_password_reset_email(
                 user=user,
                 reset_token=reset_token,
                 frontend_url=frontend_url
             )
+
+            if not email_sent:
+                return Response(
+                    {'message': "L'email de réinitialisation n'a pas pu être envoyé. Vérifiez la configuration email du serveur."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
         except User.DoesNotExist:
             pass
         

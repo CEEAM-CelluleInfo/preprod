@@ -7,6 +7,10 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class EmailService:
@@ -65,9 +69,7 @@ class EmailService:
             return True
             
         except Exception as e:
-            # En production, logger cette erreur dans un système de monitoring
-            print(f"❌ Erreur lors de l'envoi d'email à {recipient_email}: {str(e)}")
-            # Ne pas relever l'exception pour ne pas bloquer l'utilisateur
+            logger.exception("Erreur lors de l'envoi d'email à %s", recipient_email)
             return False
     
     @staticmethod

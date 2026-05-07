@@ -1108,11 +1108,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     def validate_email(self, value):
         """Vérifier que l'email est unique."""
-        if User.objects.filter(email=value.lower()).exists():
+        normalized_email = value.lower()
+        if User.objects.filter(email__iexact=normalized_email).exists():
             raise serializers.ValidationError(
                 "Un utilisateur avec cet email existe déjà."
             )
-        return value.lower()
+        return normalized_email
     
     def validate_username(self, value):
         """Vérifier que le username est unique."""
@@ -1208,7 +1209,7 @@ class ResendVerificationEmailSerializer(serializers.Serializer):
     
     def validate_email(self, value):
         try:
-            user = User.objects.get(email=value.lower())
+            user = User.objects.get(email__iexact=value.lower())
         except User.DoesNotExist:
             raise serializers.ValidationError(
                 "Un email de vérification sera envoyé si cet email existe."
