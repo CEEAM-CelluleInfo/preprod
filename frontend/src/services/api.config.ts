@@ -309,11 +309,22 @@ export async function apiPatch<T>(
  * Effectue une requête DELETE vers l'API
  */
 export async function apiDelete(endpoint: string, requireAuth: boolean = true): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'DELETE',
     headers: getDefaultHeaders(requireAuth),
     credentials: 'include', // Pour envoyer/recevoir les cookies JWT
   });
+
+  if (response.status === 401 && requireAuth) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'DELETE',
+        headers: getDefaultHeaders(requireAuth),
+        credentials: 'include',
+      });
+    }
+  }
 
   if (!response.ok && response.status !== 204) {
     const error = (await parseResponseBody<{ detail?: string }>(response).catch(() => null)) || { detail: 'Erreur réseau' };

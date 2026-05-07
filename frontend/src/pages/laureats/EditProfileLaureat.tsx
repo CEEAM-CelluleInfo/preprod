@@ -1314,22 +1314,22 @@ const EditProfileLaureat = () => {
                                 <p className="text-sm text-gray-500 mt-1">{item.description}</p>
                               )}
                             </div>
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleStartEditHistorique(item)}
                                 disabled={historiqueLoading}
-                                className="text-orange-500 hover:text-orange-700 disabled:opacity-50"
+                                className="px-3 py-1.5 border border-orange-300 text-orange-700 rounded-md text-xs font-medium hover:bg-orange-50 disabled:opacity-50"
                               >
-                                <i className="fas fa-pen"></i>
+                                Modifier
                               </button>
                               <button
                                 type="button"
                                 onClick={() => item.id && handleRemoveHistorique(item.id)}
                                 disabled={historiqueLoading}
-                                className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                                className="px-3 py-1.5 border border-red-300 text-red-700 rounded-md text-xs font-medium hover:bg-red-50 disabled:opacity-50"
                               >
-                                <i className="fas fa-trash"></i>
+                                Supprimer
                               </button>
                             </div>
                           </>
@@ -1521,17 +1521,17 @@ const EditProfileLaureat = () => {
                                     type="button"
                                     onClick={handleSaveCompetence}
                                     disabled={competencesLoading}
-                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                    className="px-2 py-1 bg-white text-green-700 rounded text-xs font-medium disabled:opacity-50"
                                   >
-                                    <i className="fas fa-check text-xs"></i>
+                                    OK
                                   </button>
                                   <button
                                     type="button"
                                     onClick={handleCancelEditCompetence}
                                     disabled={competencesLoading}
-                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                    className="px-2 py-1 border border-white/70 text-white rounded text-xs font-medium disabled:opacity-50"
                                   >
-                                    <i className="fas fa-times text-xs"></i>
+                                    Annuler
                                   </button>
                                 </>
                               ) : (
@@ -1546,17 +1546,17 @@ const EditProfileLaureat = () => {
                                     type="button"
                                     onClick={() => handleStartEditCompetence(competence)}
                                     disabled={competencesLoading}
-                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                    className="px-2 py-0.5 bg-white text-green-700 rounded text-xs font-medium disabled:opacity-50"
                                   >
-                                    <i className="fas fa-pen text-xs"></i>
+                                    Modifier
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => competence.id && handleRemoveCompetence(competence.id)}
                                     disabled={competencesLoading}
-                                    className="text-white hover:text-gray-200 disabled:opacity-50"
+                                    className="px-2 py-0.5 border border-white/70 text-white rounded text-xs font-medium disabled:opacity-50"
                                   >
-                                    <i className="fas fa-times text-xs"></i>
+                                    Supprimer
                                   </button>
                                 </>
                               )}

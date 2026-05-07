@@ -235,17 +235,7 @@ export class ProfileService {
    * DELETE /api/laureats/{userId}/historique/{entryId}/
    */
   static async deleteHistoriqueEntry(userId: number, entryId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/laureats/${userId}/historique/${entryId}/`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Utilisateur non connecté');
-      }
-      throw new Error('Erreur lors de la suppression');
-    }
+    return apiDelete(`/laureats/${userId}/historique/${entryId}/`, true);
   }
 
   // =====================================================
@@ -297,17 +287,7 @@ export class ProfileService {
    * DELETE /api/laureats/{userId}/competences/{compId}/
    */
   static async deleteCompetence(userId: number, compId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/laureats/${userId}/competences/${compId}/`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Utilisateur non connecté');
-      }
-      throw new Error('Erreur lors de la suppression');
-    }
+    return apiDelete(`/laureats/${userId}/competences/${compId}/`, true);
   }
 
   /**
@@ -315,19 +295,8 @@ export class ProfileService {
    * DELETE /api/laureats/{userId}/competences/category/{categoryId}/
    */
   static async deleteCompetenceCategory(userId: number, categoryId: number): Promise<{ deleted: number; message: string }> {
-    const response = await fetch(`${API_BASE_URL}/laureats/${userId}/competences/category/${categoryId}/`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Utilisateur non connecté');
-      }
-      throw new Error('Erreur lors de la suppression');
-    }
-
-    return response.json();
+    await apiDelete(`/laureats/${userId}/competences/category/${categoryId}/`, true);
+    return { deleted: 0, message: 'Suppression effectuée.' };
   }
 
   // === MÉTHODE GETMYSTATS COMMENTÉE ===
