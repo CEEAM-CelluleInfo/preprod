@@ -62,6 +62,11 @@ const DashUserconnected: React.FC = () => {
     };
   };
 
+  const getActivityInitial = (title?: string) => {
+    const normalizedTitle = title?.trim();
+    return normalizedTitle ? normalizedTitle.charAt(0).toLocaleUpperCase() : 'A';
+  };
+
   const generateCalendarDays = (monthIndex: number, year: number) => {
     const currentMonthName = months[monthIndex];
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
@@ -231,9 +236,8 @@ const DashUserconnected: React.FC = () => {
                           className="h-[84px] w-full rounded-xl object-cover sm:mr-4 sm:w-[84px]"
                         />
                       ) : (
-                        <div className="flex min-h-[84px] w-full flex-col items-center justify-center rounded-xl bg-slate-900 p-3 text-white sm:mr-4 sm:min-w-[84px] sm:w-auto">
-                          <div className="text-xs font-bold uppercase tracking-wide text-white/70">{activity.month}</div>
-                          <div className="text-2xl font-bold">{activity.day}</div>
+                        <div className="flex min-h-[84px] w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#172d45] via-[#215b8f] to-[#f59f24] p-3 text-white sm:mr-4 sm:min-w-[84px] sm:w-auto">
+                          <div className="text-2xl font-bold">{getActivityInitial(activity.title)}</div>
                         </div>
                       )}
 
