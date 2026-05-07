@@ -16,7 +16,11 @@ def build_frontend_url(request=None) -> str:
         if origin:
             return origin.rstrip("/")
 
-    return "http://localhost:8080"
+    frontend_origins = getattr(settings, "FRONTEND_ORIGINS", [])
+    if frontend_origins:
+        return frontend_origins[0].rstrip("/")
+
+    return "https://ceaam.org"
 
 
 def send_laureat_approval_email(join_request, frontend_url: str) -> bool:
