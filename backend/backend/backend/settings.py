@@ -1,10 +1,11 @@
 
 from pathlib import Path
 import os
-from decouple import config
+from decouple import AutoConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+config = AutoConfig(search_path=Path(__file__).resolve().parent)
 
 
 # Quick-start development settings - unsuitable for production
