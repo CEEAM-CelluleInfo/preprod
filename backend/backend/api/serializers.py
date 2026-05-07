@@ -224,27 +224,10 @@ class LaureatJoinRequestSerializer(serializers.ModelSerializer):
 
     def validate_promotion(self, value):
         cleaned = value.strip()
-        if not cleaned:
-            return ""
-
-        known_promotions = list(
-            User.objects.filter(role='laureat', promotion__isnull=False)
-            .exclude(promotion='')
-            .values_list('promotion', flat=True)
-            .distinct()
-        )
-        if known_promotions and cleaned not in known_promotions:
-            raise serializers.ValidationError("La promotion fournie est inconnue.")
         return cleaned
 
     def validate_specialite(self, value):
         cleaned = value.strip()
-        if not cleaned:
-            return ""
-
-        is_known = Specialite.objects.filter(intitule__iexact=cleaned, is_active=True).exists()
-        if not is_known:
-            raise serializers.ValidationError("La specialite fournie est inconnue.")
         return cleaned
 
     def validate(self, attrs):

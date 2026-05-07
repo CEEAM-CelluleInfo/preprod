@@ -34,6 +34,22 @@ interface JoinFormData {
 
 const getSpecialiteLabel = (user: any) => user?.specialite_intitule || user?.specialite || "";
 
+const getJoinRequestErrorMessage = (error: any) => {
+  if (error?.data?.message && error.status !== 400) {
+    return error.data.message;
+  }
+
+  const details = error?.data?.details;
+  if (details && typeof details === "object") {
+    const firstDetail = Object.values(details).flat().find(Boolean);
+    if (typeof firstDetail === "string") {
+      return firstDetail;
+    }
+  }
+
+  return error?.detail || error?.message || "Impossible de soumettre la demande pour le moment.";
+};
+
 const LaureatsUserConnected = () => {
   const navigate = useNavigate();
 
@@ -219,7 +235,7 @@ const LaureatsUserConnected = () => {
       } else if (err?.status === 409) {
         setJoinError("Une demande est deja en attente pour ce contact.");
       } else {
-        setJoinError("Impossible de soumettre la demande pour le moment.");
+        setJoinError(getJoinRequestErrorMessage(err));
       }
     } finally {
       setJoinLoading(false);
