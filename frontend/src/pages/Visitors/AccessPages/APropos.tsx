@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { apiGet } from '@/services/api.config';
 
 interface Leader {
   id: number;
@@ -57,6 +58,15 @@ interface FormerSecretaryGeneral {
   image?: string;
 }
 
+interface AboutStatsResponse {
+  data?: Stat[];
+}
+
+interface AboutLeadersResponse {
+  data?: Leader[];
+  top_secretaires_generaux?: FormerSecretaryGeneral[];
+}
+
 export const APropos: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'mission' | 'vision' | 'valeurs'>('mission');
   const [currentLeaderIndex, setCurrentLeaderIndex] = useState(0);
@@ -70,22 +80,15 @@ export const APropos: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const statsRes = await fetch('/api/about/stats/');
-        if (!statsRes.ok) throw new Error('Erreur chargement statistiques');
-        const statsData = await statsRes.json();
+        const statsData = await apiGet<AboutStatsResponse>('/about/stats/');
         setStats(statsData.data || []);
 
-        const leadersRes = await fetch('/api/about/leaders/');
-        if (!leadersRes.ok) throw new Error('Erreur chargement leaders');
-        const leadersData = await leadersRes.json();
+        const leadersData = await apiGet<AboutLeadersResponse>('/about/leaders/');
         setLeaders(leadersData.data || []);
         setFormerSecretaries(leadersData.top_secretaires_generaux || []);
 
-        const contentRes = await fetch('/api/about/content/');
-        if (contentRes.ok) {
-          const contentData = await contentRes.json();
-          setAboutContent(contentData);
-        }
+        const contentData = await apiGet<AboutContent>('/about/content/');
+        setAboutContent(contentData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erreur de chargement');
       } finally {
