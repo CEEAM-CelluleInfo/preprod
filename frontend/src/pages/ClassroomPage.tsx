@@ -72,9 +72,14 @@ const ClassroomPage: React.FC = () => {
   const handleCreateSubject = async () => {
     if (!selectedClass || !newSubjectName) return;
     try {
-      await ClassroomService.createSubject(selectedClass.id, { name: newSubjectName, description: newSubjectDescription });
+      const created = await ClassroomService.createSubject(selectedClass.id, { title: newSubjectName, description: newSubjectDescription });
       const s = await ClassroomService.getSubjects(selectedClass.id);
       setSubjects(s);
+      // select the newly created subject if present
+      if (created && (created as any).id) {
+        const found = s.find((x) => x.id === (created as any).id);
+        if (found) setSelectedSubject(found);
+      }
       setNewSubjectName('');
       setNewSubjectDescription('');
     } catch (err) {
