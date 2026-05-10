@@ -6,6 +6,7 @@ import {
   LaureatsService,
   LaureatJoinRequestItem,
 } from '@/services/laureatsService';
+import { AuthService } from '@/services/authService';
 import { ActivityProposalService } from '@/services/activityProposalService';
 import { ActivityProposal } from '@/types/activity';
 import { AdminUserService, RoleOption } from '@/services/adminUserService';
@@ -127,6 +128,10 @@ const CPanel = () => {
       setIsLoading(false);
     }
   };
+
+  const currentUser = AuthService.getCurrentUser();
+  const canCreateClassroom = !!(currentUser && (currentUser.is_staff || currentUser.is_superuser || ['admin', 'bureau'].includes((currentUser.role || '').toLowerCase())));
+  const canManageSubjects = !!(currentUser && (currentUser.is_staff || currentUser.is_superuser || ['admin', 'bureau', 'adminpromo', 'admin_promo'].includes((currentUser.role || '').toLowerCase())));
 
   const handleCreateClassroom = async () => {
     if (!newClassroomName.trim()) {
@@ -908,32 +913,38 @@ const CPanel = () => {
               </>
             ) : activeSection === 'classroom' ? (
               <>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={newClassroomName}
-                    onChange={(e) => setNewClassroomName(e.target.value)}
-                    placeholder="Nom de la classroom"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#172d45]"
-                  />
-                  <input
-                    type="text"
-                    value={newClassroomCode}
-                    onChange={(e) => setNewClassroomCode(e.target.value)}
-                    placeholder="Code (facultatif)"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#172d45]"
-                  />
-                  <button
-                    type="button"
-                    disabled={processingId === -1}
-                    onClick={handleCreateClassroom}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#172d45] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#0f2235] disabled:cursor-not-allowed disabled:bg-slate-300"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {processingId === -1 ? 'Création...' : 'Créer'}
-                  </button>
-                </div>
-                <p className="text-sm text-slate-500 lg:text-right">{classrooms.length} classroom(s)</p>
+                {canCreateClassroom ? (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={newClassroomName}
+                        onChange={(e) => setNewClassroomName(e.target.value)}
+                        placeholder="Nom de la classroom"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#172d45]"
+                      />
+                      <input
+                        type="text"
+                        value={newClassroomCode}
+                        onChange={(e) => setNewClassroomCode(e.target.value)}
+                        placeholder="Code (facultatif)"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#172d45]"
+                      />
+                      <button
+                        type="button"
+                        disabled={processingId === -1}
+                        onClick={handleCreateClassroom}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#172d45] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#0f2235] disabled:cursor-not-allowed disabled:bg-slate-300"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {processingId === -1 ? 'Création...' : 'Créer'}
+                      </button>
+                    </div>
+                    <p className="text-sm text-slate-500 lg:text-right">{classrooms.length} classroom(s)</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500 lg:text-right">{classrooms.length} classroom(s)</p>
+                )}
               </>
             ) : (
               <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -1200,14 +1211,17 @@ const CPanel = () => {
                         <p className="mt-2 text-xs text-slate-500">Code: {room.code || '-'}</p>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <button
-                          type="button"
-                          disabled={processingId === room.id}
+                        {canCreateClassroom && (
+                          <button
+                            type="button"
+                            disabled={processingId === room.id}
                             onClick={() => handleDeleteClassroom(room.id)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-                        >
-                          <Trash2 className="h-4 w-4" /> Supprimer
-                        </button>
+                            className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                          >
+                            <Trash2 className="h-4 w-4" /> Supprimer
+                          </button>
+                        )}
+                        {canManageSubjects && (
                           <button
                             type="button"
                             disabled={processingId === room.id}
@@ -1216,6 +1230,7 @@ const CPanel = () => {
                           >
                             Gérer matières
                           </button>
+                        )}
                       </div>
                     </div>
                     {expandedClassroomId === room.id && (
@@ -1229,30 +1244,115 @@ const CPanel = () => {
                                   <p className="font-semibold text-slate-900">{sub.title}</p>
                                   <p className="text-sm text-slate-500">{sub.description || '—'}</p>
                                 </div>
+                                {canManageSubjects && (
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // enter edit mode for this subject
+                                        setSubjectDrafts((cur) => ({ ...cur, [room.id]: { title: sub.title, description: sub.description || '' } }));
+                                        setExpandedClassroomId(room.id);
+                                        // mark editing using a temporary negative id key
+                                        setSubjectDrafts((cur) => ({ ...cur, [`edit_${sub.id}` as any]: { title: sub.title, description: sub.description || '' } }));
+                                      }}
+                                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                      Éditer
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        if (!confirm('Supprimer cette matière ?')) return;
+                                        try {
+                                          await ClassroomService.deleteSubject(room.id, sub.id);
+                                          await fetchSubjectsForClassroom(room.id);
+                                          setFeedbackCard({ type: 'success', title: 'Supprimée', message: 'La matière a été supprimée.' });
+                                        } catch (err) {
+                                          console.error('Erreur suppression matière', err);
+                                          setFeedbackCard({ type: 'error', title: 'Suppression impossible', message: 'La matière n’a pas pu être supprimée.' });
+                                        }
+                                      }}
+                                      className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-1 text-sm font-semibold text-red-700 hover:bg-red-50"
+                                    >
+                                      Supprimer
+                                    </button>
+                                  </div>
+                                )}
                               </div>
+
+                              {/* Edit form for this subject (shown when draft exists for key edit_<id>) */}
+                              {((subjectDrafts as any)[`edit_${sub.id}`]) && (
+                                <div className="mt-3 space-y-2">
+                                  <input
+                                    type="text"
+                                    value={(subjectDrafts as any)[`edit_${sub.id}`].title}
+                                    onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [`edit_${sub.id}`]: { ...(cur[`edit_${sub.id}`] || {}), title: e.target.value } }))}
+                                    className="w-full rounded-md border p-2"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={(subjectDrafts as any)[`edit_${sub.id}`].description}
+                                    onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [`edit_${sub.id}`]: { ...(cur[`edit_${sub.id}`] || {}), description: e.target.value } }))}
+                                    className="w-full rounded-md border p-2"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={async () => {
+                                        const draft = (subjectDrafts as any)[`edit_${sub.id}`];
+                                        try {
+                                          await ClassroomService.updateSubject(room.id, sub.id, { title: draft.title, description: draft.description });
+                                          await fetchSubjectsForClassroom(room.id);
+                                          const updated = { ...subjectDrafts };
+                                          delete (updated as any)[`edit_${sub.id}`];
+                                          setSubjectDrafts(updated);
+                                          setFeedbackCard({ type: 'success', title: 'Mise à jour', message: 'La matière a été mise à jour.' });
+                                        } catch (err) {
+                                          console.error('Erreur mise à jour matière', err);
+                                          setFeedbackCard({ type: 'error', title: 'Mise à jour impossible', message: 'La matière n’a pas pu être mise à jour.' });
+                                        }
+                                      }}
+                                      className="px-3 py-1 rounded bg-green-600 text-white"
+                                    >
+                                      Sauvegarder
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const updated = { ...subjectDrafts };
+                                        delete (updated as any)[`edit_${sub.id}`];
+                                        setSubjectDrafts(updated);
+                                      }}
+                                      className="px-3 py-1 rounded border"
+                                    >
+                                      Annuler
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
 
-                          <div className="mt-2 bg-white p-3 rounded-lg border border-dashed border-slate-200">
-                            <p className="font-medium mb-2">Ajouter une matière</p>
-                            <input
-                              type="text"
-                              value={(subjectDrafts[room.id]?.title) || ''}
-                              onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [room.id]: { ...(cur[room.id] || { title: '', description: '' }), title: e.target.value } }))}
-                              placeholder="Nom de la matière"
-                              className="w-full rounded-md border border-slate-200 p-2"
-                            />
-                            <input
-                              type="text"
-                              value={(subjectDrafts[room.id]?.description) || ''}
-                              onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [room.id]: { ...(cur[room.id] || { title: '', description: '' }), description: e.target.value } }))}
-                              placeholder="Description (optionnelle)"
-                              className="w-full rounded-md border border-slate-200 p-2 mt-2"
-                            />
-                            <div className="mt-2">
-                              <button type="button" onClick={() => handleCreateSubjectInCPanel(room.id)} className="px-4 py-2 rounded bg-blue-600 text-white">Créer la matière</button>
+                          {canManageSubjects && (
+                            <div className="mt-2 bg-white p-3 rounded-lg border border-dashed border-slate-200">
+                              <p className="font-medium mb-2">Ajouter une matière</p>
+                              <input
+                                type="text"
+                                value={(subjectDrafts[room.id]?.title) || ''}
+                                onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [room.id]: { ...(cur[room.id] || { title: '', description: '' }), title: e.target.value } }))}
+                                placeholder="Nom de la matière"
+                                className="w-full rounded-md border border-slate-200 p-2"
+                              />
+                              <input
+                                type="text"
+                                value={(subjectDrafts[room.id]?.description) || ''}
+                                onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [room.id]: { ...(cur[room.id] || { title: '', description: '' }), description: e.target.value } }))}
+                                placeholder="Description (optionnelle)"
+                                className="w-full rounded-md border border-slate-200 p-2 mt-2"
+                              />
+                              <div className="mt-2">
+                                <button type="button" onClick={() => handleCreateSubjectInCPanel(room.id)} className="px-4 py-2 rounded bg-blue-600 text-white">Créer la matière</button>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     )}

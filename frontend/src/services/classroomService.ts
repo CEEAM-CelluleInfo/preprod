@@ -66,7 +66,18 @@ export const ClassroomService = {
   async createResource(classroomId: number, subjectId: number, payload: Partial<ResourceItem>) {
     return apiPost(`/classroom/${classroomId}/subjects/${subjectId}/resources/`, payload, true);
   },
+  async updateResource(classroomId: number, subjectId: number, resourceId: number, payload: Partial<ResourceItem>) {
+    return apiPut(`/classroom/${classroomId}/subjects/${subjectId}/resources/${resourceId}/`, payload, true);
+  },
   async deleteResource(classroomId: number, subjectId: number, resourceId: number) {
     return apiDelete(`/classroom/${classroomId}/subjects/${subjectId}/resources/${resourceId}/`, true);
+  }
+  ,
+  async deleteSubject(classroomId: number, subjectId: number) {
+    return apiDelete(`/classroom/${classroomId}/subjects/${subjectId}/`, true);
+  }
+  ,
+  async updateSubject(classroomId: number, subjectId: number, payload: Partial<SubjectItem>) {
+    return apiPut(`/classroom/${classroomId}/subjects/${subjectId}/`, payload, true);
   }
 };

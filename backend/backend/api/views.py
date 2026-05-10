@@ -4392,7 +4392,8 @@ class ClassroomListCreateView(APIView):
 
     def post(self, request):
         # Admin/bureau-only creation (allow app roles 'admin' or 'bureau')
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+        role = (getattr(request.user, 'role', '') or '').lower()
+        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = ClassroomSerializer(data=request.data)
@@ -4419,7 +4420,8 @@ class ClassroomDetailView(APIView):
         return Response(serializer.data)
 
     def put(self, request, classroom_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+        role = (getattr(request.user, 'role', '') or '').lower()
+        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         classroom = self.get_object(classroom_id)
         if not classroom:
@@ -4431,7 +4433,8 @@ class ClassroomDetailView(APIView):
         return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, classroom_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+        role = (getattr(request.user, 'role', '') or '').lower()
+        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         classroom = self.get_object(classroom_id)
         if not classroom:
@@ -4449,7 +4452,8 @@ class SubjectListCreateView(APIView):
         return Response({'data': serializer.data})
 
     def post(self, request, classroom_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+        role = (getattr(request.user, 'role', '') or '').lower()
+        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         data = request.data.copy()
         data['classroom'] = classroom_id
@@ -4477,7 +4481,8 @@ class SubjectDetailView(APIView):
         return Response(serializer.data)
 
     def put(self, request, classroom_id, subject_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+        role = (getattr(request.user, 'role', '') or '').lower()
+        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         subject = self.get_object(classroom_id, subject_id)
         if not subject:
@@ -4489,7 +4494,8 @@ class SubjectDetailView(APIView):
         return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, classroom_id, subject_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+        role = (getattr(request.user, 'role', '') or '').lower()
+        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         subject = self.get_object(classroom_id, subject_id)
         if not subject:
@@ -4507,7 +4513,8 @@ class ResourceListCreateView(APIView):
         return Response({'data': serializer.data})
 
     def post(self, request, classroom_id, subject_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+        role = (getattr(request.user, 'role', '') or '').lower()
+        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         data = request.data.copy()
         data['subject'] = subject_id

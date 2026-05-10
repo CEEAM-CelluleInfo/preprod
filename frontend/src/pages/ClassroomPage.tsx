@@ -67,7 +67,8 @@ const ClassroomPage: React.FC = () => {
   const [newResourceUrl, setNewResourceUrl] = useState('');
   const [newResourceDescription, setNewResourceDescription] = useState('');
 
-  const canManage = !!(currentUser && (currentUser.is_staff || currentUser.is_superuser || ['admin', 'bureau'].includes(currentUser.role)));
+  const roleLower = (currentUser?.role || '').toLowerCase();
+  const canManage = !!(currentUser && (currentUser.is_staff || currentUser.is_superuser || ['admin', 'bureau', 'adminpromo', 'admin_promo'].includes(roleLower)));
 
   const handleCreateSubject = async () => {
     if (!selectedClass || !newSubjectName) return;
@@ -103,6 +104,30 @@ const ClassroomPage: React.FC = () => {
       setShowResourceForm(false);
     } catch (err) {
       console.error('Erreur création ressource', err);
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: number) => {
+    if (!selectedClass || !selectedSubject) return;
+    if (!confirm('Supprimer cette ressource ?')) return;
+    try {
+      await ClassroomService.deleteResource(selectedClass.id, selectedSubject.id, resourceId);
+      const r = await ClassroomService.getResources(selectedClass.id, selectedSubject.id);
+      setResources(r);
+    } catch (err) {
+      console.error('Erreur suppression ressource', err);
+    }
+  };
+
+  const handleUpdateResource = async (resourceId: number, payload: Partial<ResourceItem>) => {
+    if (!selectedClass || !selectedSubject) return;
+    try {
+      await ClassroomService.updateResource(selectedClass.id, selectedSubject.id, resourceId, payload);
+      const r = await ClassroomService.getResources(selectedClass.id, selectedSubject.id);
+      setResources(r);
+    } catch (err) {
+      console.error('Erreur mise à jour ressource', err);
+      throw err;
     }
   };
 
@@ -201,6 +226,8 @@ const ClassroomPage: React.FC = () => {
               <ResourcesTable
                 resources={resources}
                 onPreview={openPreview}
+                onDelete={canManage ? handleDeleteResource : undefined}
+                onEditSave={canManage ? handleUpdateResource : undefined}
               />
             </div>
           </div>
