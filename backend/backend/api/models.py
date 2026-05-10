@@ -54,6 +54,7 @@ class User(AbstractUser):
         ("student", "Étudiant"),
         ("bureau", "Membre du Bureau"),
         ("admin", "Administrateur"),
+        ('adminpromo', 'Admin de Promotion'),
         ("laureat", "Lauréat"),
     ]
     
