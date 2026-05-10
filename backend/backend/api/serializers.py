@@ -551,6 +551,13 @@ class LaureatFullProfileSerializer(serializers.Serializer):
         
         return instance
 
+    def to_representation(self, instance):
+        """Résout les URLs de médias (S3 et locales) avant serialization."""
+        data = super().to_representation(instance)
+        if data.get('profileImage'):
+            data['profileImage'] = _resolve_media_url(data['profileImage'])
+        return data
+
 
 class LaureatViewProfileSerializer(serializers.Serializer):
     id = serializers.UUIDField(source="user.id", read_only=True)
@@ -1352,7 +1359,7 @@ class LaureatDetailSerializer(serializers.Serializer):
 
     def get_profileImage(self, obj):
         if obj.user.avatar_url:
-            return obj.user.avatar_url
+            return _resolve_media_url(obj.user.avatar_url)
         return None
 
     def get_location(self, obj):

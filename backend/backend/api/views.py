@@ -3561,11 +3561,11 @@ class LaureatListView(APIView):
             photo_url = None
             raw_photo = laureat.user.avatar_url
             if raw_photo:
-                raw_photo = str(raw_photo)
-                if raw_photo.startswith('http://') or raw_photo.startswith('https://'):
-                    photo_url = raw_photo
-                else:
-                    photo_url = request.build_absolute_uri(raw_photo)
+                # Utilise _resolve_media_url qui gère S3 et les URLs locales correctement
+                photo_url = _resolve_media_url(str(raw_photo))
+                # Si c'est une URL relative, la rendre absolue
+                if photo_url and not photo_url.startswith('http://') and not photo_url.startswith('https://'):
+                    photo_url = request.build_absolute_uri(photo_url)
 
             full_name = f"{laureat.user.last_name} {laureat.user.first_name}".strip()
             country_label = ''

@@ -1,4 +1,5 @@
 import { Briefcase, Globe2, GraduationCap, MapPin, ArrowRight } from "lucide-react";
+import { getAbsoluteMediaUrl } from "@/lib/utils";
 
 const LaureatCard = ({ laureat, onViewProfile }) => {
   // Générer les initiales si pas de photo
@@ -20,7 +21,7 @@ const LaureatCard = ({ laureat, onViewProfile }) => {
       
       {laureat.photo ? (
         <img 
-          src={laureat.photo} 
+          src={getAbsoluteMediaUrl(laureat.photo)} 
           alt="Profil"
           className="mx-auto mb-4 h-24 w-24 rounded-full object-cover ring-4 ring-slate-100"
         />
