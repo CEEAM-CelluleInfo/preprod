@@ -9,7 +9,7 @@ import {
 import { ActivityProposalService } from '@/services/activityProposalService';
 import { ActivityProposal } from '@/types/activity';
 import { AdminUserService, RoleOption } from '@/services/adminUserService';
-import { ClassroomService, ClassroomItem } from '@/services/classroomService';
+import { ClassroomService, ClassroomItem, SubjectItem } from '@/services/classroomService';
 import { User } from '@/types/auth';
 import { VoteService } from '@/services/voteService';
 import { AdminVotePositionItem, AdminVoteSessionConfigItem, AdminVoteSessionItem } from '@/types/vote';
@@ -74,6 +74,9 @@ const CPanel = () => {
     message: string;
   } | null>(null);
   const [classrooms, setClassrooms] = useState<ClassroomItem[]>([]);
+  const [expandedClassroomId, setExpandedClassroomId] = useState<number | null>(null);
+  const [classroomSubjects, setClassroomSubjects] = useState<Record<number, SubjectItem[]>>({});
+  const [subjectDrafts, setSubjectDrafts] = useState<Record<number, { title: string; description: string }>>({});
   const [newClassroomName, setNewClassroomName] = useState('');
   const [newClassroomCode, setNewClassroomCode] = useState('');
   const [newClassroomDescription, setNewClassroomDescription] = useState('');
@@ -158,6 +161,43 @@ const CPanel = () => {
       setFeedbackCard({ type: 'error', title: 'Suppression impossible', message: 'La classroom n’a pas pu être supprimée.' });
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const fetchSubjectsForClassroom = async (classroomId: number) => {
+    try {
+      const s = await ClassroomService.getSubjects(classroomId);
+      setClassroomSubjects((cur) => ({ ...cur, [classroomId]: s }));
+    } catch (err) {
+      console.error('Erreur chargement matières:', err);
+      setFeedbackCard({ type: 'error', title: 'Chargement impossible', message: 'Les matières n’ont pas pu être chargées.' });
+    }
+  };
+
+  const handleToggleManageSubjects = async (classroomId: number) => {
+    if (expandedClassroomId === classroomId) {
+      setExpandedClassroomId(null);
+      return;
+    }
+    setExpandedClassroomId(classroomId);
+    // load subjects for this classroom
+    await fetchSubjectsForClassroom(classroomId);
+  };
+
+  const handleCreateSubjectInCPanel = async (classroomId: number) => {
+    const draft = subjectDrafts[classroomId] || { title: '', description: '' };
+    if (!draft.title.trim()) {
+      setFeedbackCard({ type: 'error', title: 'Nom requis', message: 'Le nom de la matière est requis.' });
+      return;
+    }
+    try {
+      await ClassroomService.createSubject(classroomId, { title: draft.title, description: draft.description });
+      await fetchSubjectsForClassroom(classroomId);
+      setSubjectDrafts((cur) => ({ ...cur, [classroomId]: { title: '', description: '' } }));
+      setFeedbackCard({ type: 'success', title: 'Matière créée', message: 'La matière a été ajoutée.' });
+    } catch (err) {
+      console.error('Erreur création matière:', err);
+      setFeedbackCard({ type: 'error', title: 'Création impossible', message: 'La matière n’a pas pu être créée.' });
     }
   };
 
@@ -1163,13 +1203,59 @@ const CPanel = () => {
                         <button
                           type="button"
                           disabled={processingId === room.id}
-                          onClick={() => handleDeleteClassroom(room.id)}
+                            onClick={() => handleDeleteClassroom(room.id)}
                           className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
                         >
                           <Trash2 className="h-4 w-4" /> Supprimer
                         </button>
+                          <button
+                            type="button"
+                            disabled={processingId === room.id}
+                            onClick={() => handleToggleManageSubjects(room.id)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 mt-2"
+                          >
+                            Gérer matières
+                          </button>
                       </div>
                     </div>
+                    {expandedClassroomId === room.id && (
+                      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <h3 className="font-semibold mb-3">Matières pour {room.name}</h3>
+                        <div className="space-y-3">
+                          {(classroomSubjects[room.id] || []).map((sub) => (
+                            <div key={sub.id} className="rounded-lg bg-white p-3 border border-slate-200">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-semibold text-slate-900">{sub.title}</p>
+                                  <p className="text-sm text-slate-500">{sub.description || '—'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          <div className="mt-2 bg-white p-3 rounded-lg border border-dashed border-slate-200">
+                            <p className="font-medium mb-2">Ajouter une matière</p>
+                            <input
+                              type="text"
+                              value={(subjectDrafts[room.id]?.title) || ''}
+                              onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [room.id]: { ...(cur[room.id] || { title: '', description: '' }), title: e.target.value } }))}
+                              placeholder="Nom de la matière"
+                              className="w-full rounded-md border border-slate-200 p-2"
+                            />
+                            <input
+                              type="text"
+                              value={(subjectDrafts[room.id]?.description) || ''}
+                              onChange={(e) => setSubjectDrafts((cur) => ({ ...cur, [room.id]: { ...(cur[room.id] || { title: '', description: '' }), description: e.target.value } }))}
+                              placeholder="Description (optionnelle)"
+                              className="w-full rounded-md border border-slate-200 p-2 mt-2"
+                            />
+                            <div className="mt-2">
+                              <button type="button" onClick={() => handleCreateSubjectInCPanel(room.id)} className="px-4 py-2 rounded bg-blue-600 text-white">Créer la matière</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
