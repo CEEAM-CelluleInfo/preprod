@@ -1336,3 +1336,72 @@ class StudentGuide(models.Model):
 
     def __str__(self):
         return self.filename
+
+
+# =====================================================
+# SECTION: CLASSROOM (Classes, Matières, Ressources)
+# =====================================================
+
+
+class Classroom(models.Model):
+    """Représente une classe / niveau / filière (ex: 'Licence 3 - Informatique')."""
+    name = models.CharField(max_length=200, verbose_name="Nom de la classe")
+    code = models.CharField(max_length=50, blank=True, verbose_name="Code (optionnel)")
+    description = models.TextField(blank=True, verbose_name="Description")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Mis à jour le")
+
+    class Meta:
+        verbose_name = "Classe"
+        verbose_name_plural = "Classes"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Subject(models.Model):
+    """Une matière appartenant à une classe."""
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="subjects")
+    title = models.CharField(max_length=200, verbose_name="Intitulé de la matière")
+    code = models.CharField(max_length=50, blank=True, verbose_name="Code (optionnel)")
+    description = models.TextField(blank=True, verbose_name="Description")
+    display_order = models.PositiveIntegerField(default=0, verbose_name="Ordre d'affichage")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Mis à jour le")
+
+    class Meta:
+        verbose_name = "Matière"
+        verbose_name_plural = "Matieres"
+        ordering = ["display_order", "title"]
+
+    def __str__(self):
+        return f"{self.title} ({self.classroom.name})"
+
+
+class Resource(models.Model):
+    """Ressource pédagogique liée à une matière. Principalement des liens (Drive, docs, etc.)."""
+
+    RESOURCE_TYPE_CHOICES = [
+        ("link", "Lien"),
+        ("drive_folder", "Drive (dossier)"),
+        ("document", "Document"),
+    ]
+
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="resources")
+    title = models.CharField(max_length=300, verbose_name="Titre")
+    resource_type = models.CharField(max_length=30, choices=RESOURCE_TYPE_CHOICES, default="link")
+    url = models.CharField(max_length=1000, verbose_name="URL / lien")
+    description = models.TextField(blank=True, verbose_name="Description")
+    allow_preview = models.BooleanField(default=True, verbose_name="Autoriser l'aperçu")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Mis à jour le")
+
+    class Meta:
+        verbose_name = "Ressource"
+        verbose_name_plural = "Ressources"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.subject.title})"

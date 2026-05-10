@@ -33,6 +33,7 @@ import DashUserConnected from "./pages/ConnectedUsers/DashUserConnected";
 import ConnectedProposeActivity from "./pages/ConnectedUsers/ProposeActivityPage";
 import CPanel from "./pages/ConnectedUsers/CPanel";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ClassroomPage from "./pages/ClassroomPage";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,9 @@ const App = () => (
           <Route path="/laureat-details/:id" element={<ProtectedRoute><LaureatDetail /></ProtectedRoute>} />
           <Route path="/proposer-activite-connected" element={<ProtectedRoute><ConnectedProposeActivity /></ProtectedRoute>} />
           <Route path="/cpanel" element={<ProtectedRoute allowedRoles={['bureau', 'admin']}><CPanel /></ProtectedRoute>} />
+
+          {/* Classroom (membres uniquement) */}
+          <Route path="/classroom" element={<ProtectedRoute><ClassroomPage /></ProtectedRoute>} />
 
           {/* ESPACE LAURÉAT */}
           <Route path="/laureats/edit-profile" element={<ProtectedRoute requiredRole="laureat"><EditProfileLaureat /></ProtectedRoute>} />

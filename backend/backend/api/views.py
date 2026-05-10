@@ -33,6 +33,7 @@ from .models import (
     ContentSection, AcademicDate, Club,
     VoteSession, Position, Candidate, Vote,
     Announcement, SchoolGuide, Notification, AuditLog,
+    Classroom, Subject, Resource,
 )
 from .serializers import (
     UserSerializer, UserCreateSerializer, CountrySerializer, SpecialiteSerializer, LaureatProfileSerializer,
@@ -48,6 +49,7 @@ from .serializers import (
     RegisterSerializer, LoginSerializer, LogoutSerializer,
     EmailVerificationSerializer, ResendVerificationEmailSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer, PasswordChangeSerializer, LaureatDetailSerializer,
+    ClassroomSerializer, SubjectSerializer, ResourceSerializer,
 )
 from .token_service import (
     EmailVerificationTokenService,
@@ -4373,3 +4375,182 @@ class UpcomingEventsView(APIView):
         activities = Activity.objects.filter(is_published=True, event_date__gte=timezone.now()).order_by('event_date')
         serializer = ActivitySerializer(activities, many=True, context={'request': request})
         return Response({'data': serializer.data})
+
+
+# =====================================================
+# Classroom API views
+# =====================================================
+
+
+class ClassroomListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        classrooms = Classroom.objects.filter(is_active=True).order_by('name')
+        serializer = ClassroomSerializer(classrooms, many=True, context={'request': request})
+        return Response({'data': serializer.data})
+
+    def post(self, request):
+        # Admin-only creation
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ClassroomSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ClassroomDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, classroom_id):
+        try:
+            return Classroom.objects.get(pk=classroom_id)
+        except Classroom.DoesNotExist:
+            return None
+
+    def get(self, request, classroom_id):
+        classroom = self.get_object(classroom_id)
+        if not classroom:
+            return Response({'error': 'Classe non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ClassroomSerializer(classroom, context={'request': request})
+        return Response(serializer.data)
+
+    def put(self, request, classroom_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        classroom = self.get_object(classroom_id)
+        if not classroom:
+            return Response({'error': 'Classe non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ClassroomSerializer(classroom, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, classroom_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        classroom = self.get_object(classroom_id)
+        if not classroom:
+            return Response({'error': 'Classe non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        classroom.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SubjectListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, classroom_id):
+        subjects = Subject.objects.filter(classroom_id=classroom_id).order_by('display_order', 'title')
+        serializer = SubjectSerializer(subjects, many=True, context={'request': request})
+        return Response({'data': serializer.data})
+
+    def post(self, request, classroom_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        data = request.data.copy()
+        data['classroom'] = classroom_id
+        serializer = SubjectSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubjectDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, classroom_id, subject_id):
+        try:
+            return Subject.objects.get(pk=subject_id, classroom_id=classroom_id)
+        except Subject.DoesNotExist:
+            return None
+
+    def get(self, request, classroom_id, subject_id):
+        subject = self.get_object(classroom_id, subject_id)
+        if not subject:
+            return Response({'error': 'Matière non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = SubjectSerializer(subject, context={'request': request})
+        return Response(serializer.data)
+
+    def put(self, request, classroom_id, subject_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        subject = self.get_object(classroom_id, subject_id)
+        if not subject:
+            return Response({'error': 'Matière non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = SubjectSerializer(subject, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, classroom_id, subject_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        subject = self.get_object(classroom_id, subject_id)
+        if not subject:
+            return Response({'error': 'Matière non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        subject.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ResourceListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, classroom_id, subject_id):
+        resources = Resource.objects.filter(subject_id=subject_id).order_by('-created_at')
+        serializer = ResourceSerializer(resources, many=True, context={'request': request})
+        return Response({'data': serializer.data})
+
+    def post(self, request, classroom_id, subject_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        data = request.data.copy()
+        data['subject'] = subject_id
+        serializer = ResourceSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResourceDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, classroom_id, subject_id, resource_id):
+        try:
+            return Resource.objects.get(pk=resource_id, subject_id=subject_id)
+        except Resource.DoesNotExist:
+            return None
+
+    def get(self, request, classroom_id, subject_id, resource_id):
+        resource = self.get_object(classroom_id, subject_id, resource_id)
+        if not resource:
+            return Response({'error': 'Ressource non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ResourceSerializer(resource, context={'request': request})
+        return Response(serializer.data)
+
+    def put(self, request, classroom_id, subject_id, resource_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        resource = self.get_object(classroom_id, subject_id, resource_id)
+        if not resource:
+            return Response({'error': 'Ressource non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ResourceSerializer(resource, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, classroom_id, subject_id, resource_id):
+        if not (request.user and (request.user.is_staff or request.user.is_superuser)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        resource = self.get_object(classroom_id, subject_id, resource_id)
+        if not resource:
+            return Response({'error': 'Ressource non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        resource.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

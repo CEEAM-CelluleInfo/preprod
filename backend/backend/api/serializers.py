@@ -1545,3 +1545,32 @@ class RegisterPageSerializer(serializers.Serializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+
+# =====================================================
+# Classroom serializers
+# =====================================================
+
+
+class ResourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resource
+        fields = [
+            'id', 'subject', 'title', 'resource_type', 'url', 'description', 'allow_preview', 'created_at', 'updated_at'
+        ]
+
+
+class SubjectSerializer(serializers.ModelSerializer):
+    resources = ResourceSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Subject
+        fields = ['id', 'classroom', 'title', 'code', 'description', 'display_order', 'resources']
+
+
+class ClassroomSerializer(serializers.ModelSerializer):
+    subjects = SubjectSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Classroom
+        fields = ['id', 'name', 'code', 'description', 'is_active', 'created_at', 'updated_at', 'subjects']

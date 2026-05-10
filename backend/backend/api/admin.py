@@ -17,6 +17,7 @@ from .models import (
     Announcement, ContactMessage, Notification,
     SchoolGuide, Document, FAQ,
     AuditLog, AboutStat, Leader, AboutContent, PracticalInfo, SchoolMedia, StudentGuide,
+        Classroom, Subject, Resource,
 
 )
 
@@ -369,3 +370,25 @@ class SchoolMediaAdmin(admin.ModelAdmin):
 @admin.register(StudentGuide)
 class StudentGuideAdmin(admin.ModelAdmin):
     list_display = ['filename', 'updated_at']
+
+
+@admin.register(Classroom)
+class ClassroomAdmin(admin.ModelAdmin):
+    list_display = ["name", "code", "is_active", "created_at"]
+    list_filter = ["is_active"]
+    search_fields = ["name", "code"]
+
+
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = ["title", "classroom", "display_order"]
+    list_filter = ["classroom"]
+    search_fields = ["title"]
+    ordering = ["classroom", "display_order"]
+
+
+@admin.register(Resource)
+class ResourceAdmin(admin.ModelAdmin):
+    list_display = ["title", "subject", "resource_type", "allow_preview", "created_at"]
+    list_filter = ["resource_type", "allow_preview"]
+    search_fields = ["title", "url", "subject__title"]
