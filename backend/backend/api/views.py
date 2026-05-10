@@ -7,6 +7,7 @@ import logging
 import re
 import uuid
 from django.db import models
+from django.db import IntegrityError, transaction
 from django.conf import settings
 from django.contrib.auth import authenticate
 from datetime import datetime, timedelta
@@ -1294,7 +1295,14 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
-            user = serializer.save()
+            try:
+                with transaction.atomic():
+                    user = serializer.save()
+            except IntegrityError:
+                return Response(
+                    {'email': ['Un compte avec cet email existe déjà.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             verification_token = EmailVerificationTokenService.create_verification_token(user)
             frontend_url = request.data.get('frontend_url', getattr(settings, 'FRONTEND_URL', 'http://localhost:5173'))
@@ -4155,7 +4163,15 @@ class RegisterPageView(APIView):
     def post(self, request):
         serializer = RegisterPageSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
+            try:
+                with transaction.atomic():
+                    user = serializer.save()
+            except IntegrityError:
+                return Response(
+                    {'email': ['Un compte avec cet email existe déjà.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             return Response({
                 'id': user.id,
                 'email': user.email,
