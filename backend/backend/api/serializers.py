@@ -14,6 +14,7 @@ from .models import (
     BureauPosition, VoteSession, Position, Candidate, Vote,
     Announcement, ContactMessage, Notification,
     SchoolGuide, Document, FAQ, AboutStat, Leader, AboutContent, PracticalInfo, SchoolMedia, StudentGuide,
+    Classroom, Subject, Resource,
 
 )
 
