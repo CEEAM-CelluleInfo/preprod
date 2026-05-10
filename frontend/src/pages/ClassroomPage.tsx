@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Header from '@/components/layout/Header';
+import Header from '@/components/layout/HeaderConnected';
 import Footer from '@/components/layout/Footer';
 import { ClassroomService, ClassroomItem, SubjectItem, ResourceItem } from '@/services/classroomService';
 import ClassSelector from '@/components/classroom/ClassSelector';
