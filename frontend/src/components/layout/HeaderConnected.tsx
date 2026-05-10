@@ -100,6 +100,7 @@ export const HeaderConnected: React.FC = () => {
   const getNavLinks = () => {
     const baseLinks = [
       { name: 'Dashboard', path: '/dashboard-connected' },
+      { name: 'Classroom', path: '/classroom' },
       { name: 'Activités', path: '/activities' },
       { name: 'Lauréats', path: '/laureats-connected' },
     ];
