@@ -9,6 +9,7 @@ import {
 import { ActivityProposalService } from '@/services/activityProposalService';
 import { ActivityProposal } from '@/types/activity';
 import { AdminUserService, RoleOption } from '@/services/adminUserService';
+import { ClassroomService, ClassroomItem } from '@/services/classroomService';
 import { User } from '@/types/auth';
 import { VoteService } from '@/services/voteService';
 import { AdminVotePositionItem, AdminVoteSessionConfigItem, AdminVoteSessionItem } from '@/types/vote';
@@ -50,7 +51,7 @@ const votePhaseLabels: Record<AdminVoteSessionItem['phase'], string> = {
 };
 
 const CPanel = () => {
-  const [activeSection, setActiveSection] = useState<'laureats' | 'activities' | 'users' | 'votes'>('laureats');
+  const [activeSection, setActiveSection] = useState<'laureats' | 'activities' | 'users' | 'votes' | 'classroom'>('laureats');
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [requests, setRequests] = useState<LaureatJoinRequestItem[]>([]);
   const [proposals, setProposals] = useState<ActivityProposal[]>([]);
@@ -72,6 +73,10 @@ const CPanel = () => {
     title: string;
     message: string;
   } | null>(null);
+  const [classrooms, setClassrooms] = useState<ClassroomItem[]>([]);
+  const [newClassroomName, setNewClassroomName] = useState('');
+  const [newClassroomCode, setNewClassroomCode] = useState('');
+  const [newClassroomDescription, setNewClassroomDescription] = useState('');
 
   const fetchRequests = async (filter: 'pending' | 'approved' | 'rejected' | 'all') => {
     setIsLoading(true);
@@ -104,6 +109,55 @@ const CPanel = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchClassrooms = async () => {
+    setIsLoading(true);
+    try {
+      const data = await ClassroomService.getClassrooms();
+      setClassrooms(data || []);
+    } catch (error) {
+      console.error('Erreur chargement classrooms:', error);
+      setFeedbackCard({ type: 'error', title: 'Chargement impossible', message: 'Les classrooms n’ont pas pu être chargées.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateClassroom = async () => {
+    if (!newClassroomName.trim()) {
+      setFeedbackCard({ type: 'error', title: 'Nom requis', message: 'Le nom de la classroom est requis.' });
+      return;
+    }
+    setProcessingId(-1);
+    try {
+      await ClassroomService.createClassroom({ name: newClassroomName, code: newClassroomCode || undefined, description: newClassroomDescription || undefined, is_active: true });
+      setNewClassroomName('');
+      setNewClassroomCode('');
+      setNewClassroomDescription('');
+      await fetchClassrooms();
+      setFeedbackCard({ type: 'success', title: 'Créée', message: 'La classroom a été créée.' });
+    } catch (error) {
+      console.error('Erreur création classroom:', error);
+      setFeedbackCard({ type: 'error', title: 'Création impossible', message: 'La classroom n’a pas pu être créée.' });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteClassroom = async (id: number) => {
+    if (!confirm('Supprimer cette classroom ? Cette action est irréversible.')) return;
+    setProcessingId(id);
+    try {
+      await ClassroomService.deleteClassroom(id);
+      await fetchClassrooms();
+      setFeedbackCard({ type: 'success', title: 'Supprimée', message: 'La classroom a été supprimée.' });
+    } catch (error) {
+      console.error('Erreur suppression classroom:', error);
+      setFeedbackCard({ type: 'error', title: 'Suppression impossible', message: 'La classroom n’a pas pu être supprimée.' });
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -165,6 +219,10 @@ const CPanel = () => {
   useEffect(() => {
     if (activeSection === 'laureats') {
       fetchRequests(statusFilter);
+      return;
+    }
+    if (activeSection === 'classroom') {
+      fetchClassrooms();
       return;
     }
 
@@ -741,6 +799,17 @@ const CPanel = () => {
             </button>
             <button
               type="button"
+              onClick={() => setActiveSection('classroom')}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${
+                activeSection === 'classroom'
+                  ? 'bg-[#172d45] text-white'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-400'
+              }`}
+            >
+              Classroom
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveSection('votes')}
               className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${
                 activeSection === 'votes'
@@ -796,6 +865,35 @@ const CPanel = () => {
                   />
                 </label>
                 <p className="text-sm text-slate-500 lg:text-right">{users.length} utilisateur(s) affiché(s)</p>
+              </>
+            ) : activeSection === 'classroom' ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={newClassroomName}
+                    onChange={(e) => setNewClassroomName(e.target.value)}
+                    placeholder="Nom de la classroom"
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#172d45]"
+                  />
+                  <input
+                    type="text"
+                    value={newClassroomCode}
+                    onChange={(e) => setNewClassroomCode(e.target.value)}
+                    placeholder="Code (facultatif)"
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#172d45]"
+                  />
+                  <button
+                    type="button"
+                    disabled={processingId === -1}
+                    onClick={handleCreateClassroom}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#172d45] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#0f2235] disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {processingId === -1 ? 'Création...' : 'Créer'}
+                  </button>
+                </div>
+                <p className="text-sm text-slate-500 lg:text-right">{classrooms.length} classroom(s)</p>
               </>
             ) : (
               <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -1046,6 +1144,36 @@ const CPanel = () => {
                 </article>
               ))}
             </div>
+          ) : activeSection === 'classroom' ? (
+            classrooms.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm sm:p-10">
+                Aucune classroom définie.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {classrooms.map((room) => (
+                  <article key={room.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900">{room.name}</h2>
+                        <p className="mt-2 text-sm text-slate-600">{room.description || 'Aucune description'}</p>
+                        <p className="mt-2 text-xs text-slate-500">Code: {room.code || '-'}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          disabled={processingId === room.id}
+                          onClick={() => handleDeleteClassroom(room.id)}
+                          className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                        >
+                          <Trash2 className="h-4 w-4" /> Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )
           ) : activeSection === 'users' ? users.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm sm:p-10">
               Aucun utilisateur ne correspond à la recherche.

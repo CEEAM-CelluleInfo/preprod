@@ -54,6 +54,12 @@ export const ClassroomService = {
   async createClassroom(payload: Partial<ClassroomItem>) {
     return apiPost('/classroom/', payload, true);
   },
+  async updateClassroom(id: number, payload: Partial<ClassroomItem>) {
+    return apiPut(`/classroom/${id}/`, payload, true);
+  },
+  async deleteClassroom(id: number) {
+    return apiDelete(`/classroom/${id}/`, true);
+  },
   async createSubject(classroomId: number, payload: Partial<SubjectItem>) {
     return apiPost(`/classroom/${classroomId}/subjects/`, payload, true);
   },
