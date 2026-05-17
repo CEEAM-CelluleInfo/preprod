@@ -17,6 +17,7 @@ import ProposeActivityPage from "./pages/Visitors/AccessPages/ProposeActivityPag
 import APropos from "./pages/Visitors/AccessPages/APropos";
 import Ecole from "./pages/Visitors/AccessPages/Ecole";
 import Laureats from "./pages/Visitors/AccessPages/Laureats";
+import Utilisateurs from "./pages/Visitors/AccessPages/Utilisateurs";
 import RejoindreLaureats from "./pages/Visitors/AccessPages/RejoindreLaureats";
 import Inscractivite from "./pages/Visitors/AccessPages/inscriteactivite";
 import VotePageWrapper from "./pages/ConnectedUsers/pagedevote";
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/ecole" element={<Ecole />} />
           <Route path="/a-propos" element={<APropos />} />
           <Route path="/laureats" element={<Laureats />} />
+          <Route path="/utilisateurs" element={<Utilisateurs />} />
           <Route path="/laureats/rejoindre" element={<RejoindreLaureats />} />
           <Route path="/laureats/:id" element={<ProtectedRoute><LaureatDetail /></ProtectedRoute>} />
           <Route path="/inscription-activity" element={<Inscractivite />} />

@@ -21,4 +21,5 @@ export { LaureatsService } from './laureatsService';
 export { DashboardService } from './dashboardService';
 export { NotificationService } from './notificationService';
 export { ActivityProposalService } from './activityProposalService';
+export { UserService } from './userService';
 export { VoteService } from './voteService';

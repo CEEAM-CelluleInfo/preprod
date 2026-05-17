@@ -37,7 +37,7 @@ from .models import (
     Classroom, Subject, Resource,
 )
 from .serializers import (
-    UserSerializer, UserCreateSerializer, CountrySerializer, SpecialiteSerializer, LaureatProfileSerializer,
+    UserSerializer, PublicUserListSerializer, UserCreateSerializer, CountrySerializer, SpecialiteSerializer, LaureatProfileSerializer,
     LaureatJoinRequestSerializer, LaureatJoinRequestAdminSerializer, LaureatJoinRequestStatusSerializer,
     HistoriqueEntrySerializer, CompetenceCategorySerializer, UserCompetenceSerializer, UserCompetenceCreateSerializer,
     ActivitySerializer, ActivityLikeSerializer, ActivityRegistrationSerializer, ActivityRegistrationPayloadSerializer,
@@ -1868,6 +1868,31 @@ class AdminUsersListView(APIView):
                 {'value': value, 'label': label}
                 for value, label in User.ROLE_CHOICES
             ],
+        })
+
+
+class PublicUsersListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        search = (request.query_params.get('search') or '').strip()
+        users = User.objects.select_related('country', 'specialite').filter(is_active=True).order_by('first_name', 'last_name')
+
+        if search:
+            users = users.filter(
+                models.Q(first_name__icontains=search)
+                | models.Q(last_name__icontains=search)
+                | models.Q(promotion__icontains=search)
+                | models.Q(campus__icontains=search)
+                | models.Q(specialite__intitule__icontains=search)
+                | models.Q(country__name__icontains=search)
+            )
+
+        total = users.count()
+        serializer = PublicUserListSerializer(users[:200], many=True)
+        return Response({
+            'data': serializer.data,
+            'total': total,
         })
 
 

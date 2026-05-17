@@ -77,6 +77,36 @@ class UserSerializer(serializers.ModelSerializer):
         return data
 
 
+class PublicUserListSerializer(serializers.ModelSerializer):
+    country_name = serializers.CharField(source="country.name", read_only=True)
+    country_flag = serializers.CharField(source="country.flag_emoji", read_only=True)
+    specialite_intitule = serializers.CharField(source="specialite.intitule", read_only=True)
+    full_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "full_name",
+            "avatar_url",
+            "country_name",
+            "country_flag",
+            "promotion",
+            "specialite_intitule",
+            "campus",
+            "role",
+            "biographie",
+            "linkedin_url",
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["avatar_url"] = _resolve_media_url(data.get("avatar_url"))
+        return data
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer pour le profil utilisateur complet (edit profile)."""
     country_name = serializers.CharField(source="country.name", read_only=True)

@@ -78,6 +78,9 @@ urlpatterns = [
 
     # PATCH /api/admin/users/<id>/role/ - Changer le rôle d'un utilisateur
     path('admin/users/<int:user_id>/role/', views.AdminUserRoleUpdateView.as_view(), name='admin_user_role_update'),
+
+    # GET /api/users/ - Liste publique des utilisateurs inscrits (accessible à tous)
+    path('users/', views.PublicUsersListView.as_view(), name='public_users_list'),
     
     # ====================================================
     # ENDPOINTS LAURÉATS

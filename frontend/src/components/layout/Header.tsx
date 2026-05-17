@@ -11,6 +11,7 @@ const Header = () => {
     { name: "École", href: "/ecole" },
     { name: "Activités", href: "/activites" },
     { name: "Lauréats", href: "/laureats" },
+    { name: "Utilisateurs", href: "/utilisateurs" },
   ];
 
   return (
