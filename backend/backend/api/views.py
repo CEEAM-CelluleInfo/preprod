@@ -1934,7 +1934,13 @@ class LaureatProfileDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Obtenir ou créer le profil lauréat
+        if user.role != 'laureat':
+            return None, Response(
+                {'error': 'Cet utilisateur n\'est pas un lauréat.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Obtenir ou créer le profil lauréat uniquement pour les lauréats
         profile, created = LaureatProfile.objects.get_or_create(user=user)
         
         return profile, None
@@ -2021,6 +2027,12 @@ class LaureatProfileImageView(APIView):
                 {'error': 'Vous ne pouvez modifier que votre propre profil.'},
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        if request.user.role != 'laureat':
+            return Response(
+                {'error': 'Seuls les lauréats peuvent modifier ce profil.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
         
         # Déléguer à la vue UserProfilePhotoView
         photo_view = UserProfilePhotoView()
@@ -2056,6 +2068,12 @@ class LaureatMentoringView(APIView):
             return Response(
                 {'error': 'isMentorAvailable doit être un booléen.'},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if request.user.role != 'laureat':
+            return Response(
+                {'error': 'Seuls les lauréats peuvent modifier ce profil.'},
+                status=status.HTTP_403_FORBIDDEN
             )
         
         profile, created = LaureatProfile.objects.get_or_create(user=request.user)
@@ -2099,6 +2117,12 @@ class HistoriqueEntryListCreateView(APIView):
         if str(request.user.id) != str(user_id):
             return Response(
                 {'error': 'Vous ne pouvez modifier que votre propre profil.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if request.user.role != 'laureat':
+            return Response(
+                {'error': 'Seuls les lauréats peuvent ajouter des entrées d\'historique.'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
@@ -2245,6 +2269,12 @@ class UserCompetenceListCreateView(APIView):
         if str(request.user.id) != str(user_id):
             return Response(
                 {'error': 'Vous ne pouvez modifier que votre propre profil.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if request.user.role != 'laureat':
+            return Response(
+                {'error': 'Seuls les lauréats peuvent ajouter des compétences.'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
@@ -3544,7 +3574,10 @@ class LaureatListView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        queryset = LaureatProfile.objects.select_related('user', 'user__specialite', 'work_country').filter(is_public=True)
+        queryset = LaureatProfile.objects.select_related('user', 'user__specialite', 'work_country').filter(
+            is_public=True,
+            user__role='laureat'
+        )
 
         if search:
             queryset = queryset.filter(
