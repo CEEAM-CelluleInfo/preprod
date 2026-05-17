@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, Users } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { UserService, PublicUser } from '@/services/userService';
+import { UserService, PublicUser, PublicUsersResponse } from '@/services/userService';
 
 const getInitials = (firstName: string | undefined, lastName: string | undefined): string => {
   const parts = [firstName, lastName].filter(Boolean) as string[];
@@ -11,18 +11,25 @@ const getInitials = (firstName: string | undefined, lastName: string | undefined
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 };
 
-const getSubtitle = (user: PublicUser) => {
-  const parts = [];
-  if (user.promotion) parts.push(user.promotion);
-  if (user.specialite_intitule) parts.push(user.specialite_intitule);
-  if (user.campus) parts.push(user.campus);
-  return parts.join(' · ');
+const formatRoleLabel = (role: string) => {
+  if (role === 'laureat') return 'Lauréat';
+  if (role === 'bureau') return 'Bureau';
+  if (role === 'admin') return 'Admin';
+  return 'Étudiant';
 };
 
 const Utilisateurs = () => {
   const [users, setUsers] = useState<PublicUser[]>([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedPromotion, setSelectedPromotion] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(12);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
+  const [promotions, setPromotions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,29 +42,55 @@ const Utilisateurs = () => {
   }, [search]);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, selectedRole, selectedPromotion]);
+
+  useEffect(() => {
     const loadUsers = async () => {
       setIsLoading(true);
       setError(null);
+
       try {
-        const response = await UserService.getPublicUsers(debouncedSearch || undefined);
+        const response = await UserService.getPublicUsers({
+          search: debouncedSearch || undefined,
+          role: selectedRole || undefined,
+          promotion: selectedPromotion || undefined,
+          page,
+          limit,
+        });
+
         setUsers(response.data || []);
+        setTotal(response.total || 0);
+        setTotalPages(response.totalPages || 1);
+        setRoles(response.roles || []);
+        setPromotions(response.promotions || []);
       } catch (err) {
         console.error('Erreur chargement des utilisateurs publics:', err);
         setError('Impossible de charger la liste des utilisateurs pour le moment.');
         setUsers([]);
+        setTotal(0);
+        setTotalPages(1);
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadUsers();
-  }, [debouncedSearch]);
+  }, [debouncedSearch, selectedRole, selectedPromotion, page, limit]);
 
   const resultsLabel = useMemo(() => {
     if (isLoading) return 'Chargement des utilisateurs...';
     if (error) return error;
-    return `${users.length} utilisateur${users.length > 1 ? 's' : ''} trouvé${users.length > 1 ? 's' : ''}`;
-  }, [isLoading, error, users.length]);
+    return `Affichage de ${users.length} utilisateur${users.length > 1 ? 's' : ''} sur ${total}`;
+  }, [isLoading, error, users.length, total]);
+
+  const handlePreviousPage = () => {
+    setPage((current) => Math.max(current - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((current) => Math.min(current + 1, totalPages));
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -92,23 +125,51 @@ const Utilisateurs = () => {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="mb-8 flex flex-col gap-4 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:justify-between sm:items-center">
+          <div className="mb-8 grid gap-4 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] lg:items-end">
             <div>
               <h2 className="text-2xl font-semibold text-slate-950">Liste des utilisateurs</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Parcourez tous les profils en quelques secondes. Utilisez la recherche pour filtrer par nom, promotion, spécialité ou campus.
+                Parcourez tous les profils en quelques secondes. Filtrez par rôle ou promotion, puis naviguez dans les pages.
               </p>
             </div>
-            <div className="relative max-w-md w-full">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-              <input
-                type="search"
-                aria-label="Recherche des utilisateurs"
-                placeholder="Rechercher un utilisateur..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#1e40af] focus:bg-white focus:ring-4 focus:ring-blue-100"
-              />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  aria-label="Recherche des utilisateurs"
+                  placeholder="Rechercher un utilisateur..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#1e40af] focus:bg-white focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <select
+                  value={selectedRole}
+                  onChange={(event) => setSelectedRole(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition focus:border-[#1e40af] focus:bg-white focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">Tous les rôles</option>
+                  {roles.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={selectedPromotion}
+                  onChange={(event) => setSelectedPromotion(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition focus:border-[#1e40af] focus:bg-white focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">Toutes les promos</option>
+                  {promotions.map((promotion) => (
+                    <option key={promotion} value={promotion}>
+                      {promotion}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -151,7 +212,7 @@ const Utilisateurs = () => {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-lg font-semibold text-slate-950">{user.full_name || `${user.first_name} ${user.last_name}`}</p>
-                      <p className="text-sm text-slate-500">{user.role === 'laureat' ? 'Lauréat' : user.role === 'bureau' ? 'Bureau' : user.role === 'admin' ? 'Admin' : 'Étudiant'}</p>
+                      <p className="text-sm text-slate-500">{formatRoleLabel(user.role)}</p>
                     </div>
                     <div className="inline-flex flex-wrap items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-600">
                       {user.country_flag} {user.country_name}
@@ -185,6 +246,32 @@ const Utilisateurs = () => {
               </article>
             ))}
           </div>
+
+          {!isLoading && !error && totalPages > 1 && (
+            <div className="mt-8 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-600">
+                Page {page} sur {totalPages} · {total} utilisateur{total > 1 ? 's' : ''} au total
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handlePreviousPage}
+                  disabled={page === 1}
+                  className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Précédent
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextPage}
+                  disabled={page === totalPages}
+                  className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Suivant
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       </main>
       <Footer />

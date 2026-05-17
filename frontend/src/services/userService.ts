@@ -16,14 +16,40 @@ export interface PublicUser {
   linkedin_url?: string;
 }
 
+export interface UserRoleOption {
+  value: string;
+  label: string;
+}
+
 export interface PublicUsersResponse {
   data: PublicUser[];
   total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  roles: UserRoleOption[];
+  promotions: string[];
+}
+
+export interface PublicUsersFilters {
+  search?: string;
+  role?: string;
+  promotion?: string;
+  page?: number;
+  limit?: number;
 }
 
 export class UserService {
-  static async getPublicUsers(search?: string): Promise<PublicUsersResponse> {
-    const query = search ? `?search=${encodeURIComponent(search)}` : '';
-    return apiGet<PublicUsersResponse>(`/users/${query}`, false);
+  static async getPublicUsers(filters: PublicUsersFilters = {}): Promise<PublicUsersResponse> {
+    const params = new URLSearchParams();
+
+    if (filters.search) params.append('search', filters.search);
+    if (filters.role) params.append('role', filters.role);
+    if (filters.promotion) params.append('promotion', filters.promotion);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+
+    const queryString = params.toString();
+    return apiGet<PublicUsersResponse>(`/users/${queryString ? `?${queryString}` : ''}`, false);
   }
 }

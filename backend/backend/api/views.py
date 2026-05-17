@@ -1876,7 +1876,28 @@ class PublicUsersListView(APIView):
 
     def get(self, request):
         search = (request.query_params.get('search') or '').strip()
+        selected_role = (request.query_params.get('role') or '').strip()
+        selected_promotion = (request.query_params.get('promotion') or '').strip()
+        page = request.query_params.get('page', '1')
+        limit = request.query_params.get('limit', '12')
+
+        try:
+            page_number = max(int(page), 1)
+        except ValueError:
+            page_number = 1
+
+        try:
+            page_limit = max(int(limit), 1)
+        except ValueError:
+            page_limit = 12
+
         users = User.objects.select_related('country', 'specialite').filter(is_active=True).order_by('first_name', 'last_name')
+
+        if selected_role:
+            users = users.filter(role=selected_role)
+
+        if selected_promotion:
+            users = users.filter(promotion__iexact=selected_promotion)
 
         if search:
             users = users.filter(
@@ -1889,10 +1910,34 @@ class PublicUsersListView(APIView):
             )
 
         total = users.count()
-        serializer = PublicUserListSerializer(users[:200], many=True)
+        start = (page_number - 1) * page_limit
+        end = start + page_limit
+        serializer = PublicUserListSerializer(users[start:end], many=True)
+
+        promotions = list(
+            User.objects.filter(is_active=True)
+            .exclude(promotion__isnull=True)
+            .exclude(promotion__exact='')
+            .order_by('promotion')
+            .values_list('promotion', flat=True)
+            .distinct()
+        )
+
+        roles = [
+            {'value': value, 'label': label}
+            for value, label in User.ROLE_CHOICES
+        ]
+
+        total_pages = (total + page_limit - 1) // page_limit if page_limit else 0
+
         return Response({
             'data': serializer.data,
             'total': total,
+            'page': page_number,
+            'limit': page_limit,
+            'totalPages': total_pages,
+            'roles': roles,
+            'promotions': promotions,
         })
 
 
