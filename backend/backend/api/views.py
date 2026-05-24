@@ -4045,7 +4045,7 @@ class HomePageView(APIView):
         if not stats_payload:
             total_members = User.objects.count()
             total_countries = Country.objects.filter(users__isnull=False).distinct().count()
-            total_laureats = LaureatProfile.objects.count()
+            total_laureats = User.objects.filter(role='laureat').count()
             stats_payload = [
                 {"value": str(total_countries), "label": "pays représentés"},
                 {"value": str(total_members), "label": "membres actifs"},
@@ -4097,8 +4097,8 @@ class HomePageView(APIView):
         countries_qs = Country.objects.filter(is_active=True).annotate(
             members_count=models.Count('users', distinct=True),
             laureats_count=models.Count(
-                'users__laureat_profile',
-                filter=models.Q(users__laureat_profile__isnull=False),
+                'users',
+                filter=models.Q(users__role='laureat'),
                 distinct=True,
             ),
         ).filter(
@@ -4118,7 +4118,7 @@ class HomePageView(APIView):
         community_payload = {
             "represented_countries": Country.objects.filter(users__isnull=False).distinct().count(),
             "total_members": User.objects.count(),
-            "total_laureats": LaureatProfile.objects.count(),
+            "total_laureats": User.objects.filter(role='laureat').count(),
             "countries": countries_payload,
         }
 
