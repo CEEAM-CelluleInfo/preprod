@@ -3972,34 +3972,44 @@ class AboutStatsView(APIView):
         return Response({"data": serializer.data})
 
 
+class HistoricalSGViewSet(viewsets.ModelViewSet):
+    """CRUD pour les anciens SG saisis manuellement (avant plateforme). Admin only en écriture."""
+    queryset = Leader.objects.all().order_by('-mandat', 'order')
+    serializer_class = LeaderSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+
 class AboutLeadersView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        mandat = request.query_params.get('mandat')
-        qs = Leader.objects.filter(is_active=True)
-        if mandat:
-            qs = qs.filter(mandat=mandat)
-        else:
-            # par défaut, prendre le mandat le plus récent ou celui marqué comme courant
-            qs = qs.order_by('-mandat')
-        serializer = LeaderSerializer(qs, many=True)
+        # ── Source 1 : entrées manuelles (anciens SG avant la plateforme) ──────
+        manual_leaders = Leader.objects.filter(is_active=True)
+        serializer = LeaderSerializer(manual_leaders.order_by('-mandat'), many=True)
 
-        former_secretaries_qs = BureauMember.objects.select_related('user', 'user__specialite').filter(
-            position__in=['SG', 'sg'],
-            is_current=False,
-        ).order_by('-mandate_year', 'display_order')[:5]
+        merged = []
 
-        if not former_secretaries_qs.exists():
-            former_secretaries_qs = BureauMember.objects.select_related('user', 'user__specialite').filter(
-                position__in=['SG', 'sg'],
-            ).order_by('-mandate_year', 'display_order')[:5]
+        for leader in manual_leaders:
+            merged.append({
+                'id': f"manual-{leader.id}",
+                'nom_complet': f"{leader.prenom} {leader.nom}".strip(),
+                'mandat': leader.mandat,
+                'poste': leader.position or 'Secrétaire Général',
+                'campus': leader.campus,
+                'filiere': leader.filiere,
+                'promotion': '',
+                'image': leader.image or '',
+            })
 
-        top_secretaires_generaux = []
-        for member in former_secretaries_qs:
+        # ── Source 2 : BureauMember SG enregistrés sur la plateforme ───────────
+        bureau_sgs = BureauMember.objects.select_related(
+            'user', 'user__specialite'
+        ).filter(position__in=['SG', 'sg']).order_by('-mandate_year')
+
+        for member in bureau_sgs:
             user = member.user
             full_name = user.full_name.strip() if user else ''
-            top_secretaires_generaux.append({
+            merged.append({
                 'id': member.id,
                 'nom_complet': full_name or getattr(user, 'email', 'Ancien membre'),
                 'mandat': member.mandate_year,
@@ -4010,10 +4020,20 @@ class AboutLeadersView(APIView):
                 'image': getattr(user, 'avatar_url', ''),
             })
 
+        # ── Dédupliquer par mandat, trier par année desc, garder top 5 ─────────
+        seen_mandats = set()
+        top5 = []
+        for entry in sorted(merged, key=lambda x: x['mandat'], reverse=True):
+            if entry['mandat'] not in seen_mandats:
+                seen_mandats.add(entry['mandat'])
+                top5.append(entry)
+            if len(top5) == 5:
+                break
+
         return Response({
             "data": serializer.data,
-            "total": qs.count(),
-            "top_secretaires_generaux": top_secretaires_generaux,
+            "total": manual_leaders.count(),
+            "top_secretaires_generaux": top5,
         })
 
 

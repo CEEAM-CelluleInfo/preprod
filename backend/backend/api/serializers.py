@@ -1475,7 +1475,7 @@ class LeaderSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'nom', 'prenom', 'position', 'executive', 'email',
             'nationality', 'flag', 'filiere', 'campus', 'mandat',
-            'mission', 'linkedin', 'image'
+            'mission', 'linkedin', 'image', 'order', 'is_active',
         ]
 
 

@@ -15,6 +15,7 @@ routeur.register(r"content", views.ContentSectionViewSet, basename="content-sect
 routeur.register(r"dates", views.AcademicDateViewSet, basename="academic-dates")
 routeur.register(r"activities", views.ActivityViewSet, basename="activities")
 routeur.register(r"leaders", views.BureauMemberViewSet, basename="bureau-members")
+routeur.register(r"historical-sg", views.HistoricalSGViewSet, basename="historical-sg")
 routeur.register(r"proposals", views.ActivityProposalViewSet, basename="activity-proposals")
 routeur.register(r"clubs", views.ClubViewSet, basename="clubs")
 

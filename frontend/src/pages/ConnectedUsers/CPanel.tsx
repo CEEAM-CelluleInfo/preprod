@@ -11,6 +11,7 @@ import { ActivityProposalService } from '@/services/activityProposalService';
 import { ActivityProposal } from '@/types/activity';
 import { AdminUserService, RoleOption } from '@/services/adminUserService';
 import { ClassroomService, ClassroomItem, SubjectItem } from '@/services/classroomService';
+import LeadersAdmin from '@/components/admin/LeadersAdmin';
 import { User } from '@/types/auth';
 import { VoteService } from '@/services/voteService';
 import { AdminVotePositionItem, AdminVoteSessionConfigItem, AdminVoteSessionItem } from '@/types/vote';
@@ -52,7 +53,7 @@ const votePhaseLabels: Record<AdminVoteSessionItem['phase'], string> = {
 };
 
 const CPanel = () => {
-  const [activeSection, setActiveSection] = useState<'laureats' | 'activities' | 'users' | 'votes' | 'classroom'>('laureats');
+  const [activeSection, setActiveSection] = useState<'laureats' | 'activities' | 'users' | 'votes' | 'classroom' | 'leaders'>('laureats');
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [requests, setRequests] = useState<LaureatJoinRequestItem[]>([]);
   const [proposals, setProposals] = useState<ActivityProposal[]>([]);
@@ -864,6 +865,17 @@ const CPanel = () => {
             >
               Sessions de vote
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('leaders')}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${
+                activeSection === 'leaders'
+                  ? 'bg-[#172d45] text-white'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-400'
+              }`}
+            >
+              Anciens SG
+            </button>
           </div>
 
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1610,6 +1622,10 @@ const CPanel = () => {
                 </article>
               ))}
             </div>
+          )}
+
+          {activeSection === 'leaders' && (
+            <LeadersAdmin />
           )}
         </section>
       </main>
