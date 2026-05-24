@@ -1016,7 +1016,7 @@ const CPanel = () => {
             </div>
           )}
 
-          {isLoading ? (
+          {isLoading && activeSection !== 'leaders' ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm sm:p-10">
               {activeSection === 'laureats'
                 ? 'Chargement des demandes...'
@@ -1446,6 +1446,8 @@ const CPanel = () => {
                 );
               })}
             </div>
+          ) : activeSection === 'leaders' ? (
+            <LeadersAdmin />
           ) : voteSessions.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm sm:p-10">
               <p>Aucune session de vote n’est disponible pour le moment.</p>
@@ -1624,9 +1626,6 @@ const CPanel = () => {
             </div>
           )}
 
-          {activeSection === 'leaders' && (
-            <LeadersAdmin />
-          )}
         </section>
       </main>
 
