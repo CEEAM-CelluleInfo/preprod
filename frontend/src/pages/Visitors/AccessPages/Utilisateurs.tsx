@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search, Users } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import HeaderConnected from '@/components/layout/HeaderConnected';
 import Footer from '@/components/layout/Footer';
-import { UserService, PublicUser, PublicUsersResponse } from '@/services/userService';
+import { UserService, PublicUser } from '@/services/userService';
+import { AuthService } from '@/services/authService';
 
 const getInitials = (firstName: string | undefined, lastName: string | undefined): string => {
   const parts = [firstName, lastName].filter(Boolean) as string[];
@@ -92,9 +94,11 @@ const Utilisateurs = () => {
     setPage((current) => Math.min(current + 1, totalPages));
   };
 
+  const isLoggedIn = !!AuthService.getCurrentUser();
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      <Header />
+      {isLoggedIn ? <HeaderConnected /> : <Header />}
       <main className="flex-1">
         <section className="bg-[#10263d] text-white">
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -192,7 +196,7 @@ const Utilisateurs = () => {
               </div>
             )}
 
-            {!isLoading && !error && users.map((user) => (
+            {!isLoading && !error && users.filter((user) => user.first_name || user.last_name || user.full_name).map((user) => (
               <article key={user.id} className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
                 <div className="flex-shrink-0">
                   {user.avatar_url ? (

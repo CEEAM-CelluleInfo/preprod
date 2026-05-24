@@ -103,6 +103,7 @@ export const HeaderConnected: React.FC = () => {
       { name: 'Classroom', path: '/classroom' },
       { name: 'Activités', path: '/activities' },
       { name: 'Lauréats', path: '/laureats-connected' },
+      { name: 'Utilisateurs', path: '/utilisateurs' },
     ];
     
     // Ajouter les liens spécifiques aux rôles
