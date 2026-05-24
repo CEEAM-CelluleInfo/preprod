@@ -125,12 +125,12 @@ const ViewProfilUser: React.FC = () => {
 
           {/* Onglets */}
           <div className="mb-8">
-            <div className="flex space-x-4 mb-6 justify-center">
+            <div className="flex flex-wrap gap-2 sm:gap-4 mb-6 justify-center">
               {(['apropos', 'historique', 'competences'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-2.5 font-medium rounded-lg transition ${
+                  className={`px-4 sm:px-5 py-2.5 text-sm sm:text-base font-medium rounded-lg transition whitespace-nowrap ${
                     activeTab === tab
                       ? 'bg-orange-500 text-white hover:bg-orange-600'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -148,9 +148,9 @@ const ViewProfilUser: React.FC = () => {
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-gray-800 mb-4">Informations personnelles</h3>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <span className="text-sm font-medium text-gray-500">Email</span>
-                      <span className="font-medium text-gray-900">{profile.email || '—'}</span>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b pb-2 gap-0.5">
+                      <span className="text-sm font-medium text-gray-500 flex-shrink-0">Email</span>
+                      <span className="font-medium text-gray-900 break-all sm:text-right">{profile.email || '—'}</span>
                     </div>
                     <div className="flex justify-between items-center border-b pb-2">
                       <span className="text-sm font-medium text-gray-500">Téléphone</span>
