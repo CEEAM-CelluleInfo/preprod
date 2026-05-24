@@ -277,7 +277,7 @@ export const ProposeActivityPage: React.FC = () => {
                   Informations Générales
                 </h2>
 
-                <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-2 gap-6 mb-6 items-end">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-slate-700 text-sm relative">
                       Nom de l'activité
@@ -352,7 +352,7 @@ export const ProposeActivityPage: React.FC = () => {
                   Date et Lieu
                 </h2>
 
-                <div className="grid grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-3 gap-6 mb-6 items-end">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-slate-700 text-sm relative">
                       Date
@@ -430,7 +430,7 @@ export const ProposeActivityPage: React.FC = () => {
                   Participants et Budget
                 </h2>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6 items-end">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-slate-700 text-sm">
                       Nombre de participants attendus
