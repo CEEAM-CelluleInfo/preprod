@@ -233,7 +233,7 @@ export const ProposeActivityPage: React.FC = () => {
         {/* Form Container */}
         <div className="max-w-5xl mx-auto px-6 py-12 -mt-8 relative z-20">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <form onSubmit={handleSubmit} className="p-10">
+            <form onSubmit={handleSubmit} className="p-5 sm:p-10">
               {feedbackCard && (
                 <div
                   className={`mb-8 rounded-2xl border p-4 shadow-sm ${
@@ -527,18 +527,18 @@ export const ProposeActivityPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-center gap-6 mt-12 pt-8 border-t-2 border-slate-100">
+              <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12 pt-8 border-t-2 border-slate-100">
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-8 py-4 bg-white text-slate-600 border-2 border-slate-300 rounded-lg font-semibold transition-all hover:bg-slate-100 hover:border-slate-400 min-w-[150px]"
+                  className="w-full sm:w-auto px-8 py-4 bg-white text-slate-600 border-2 border-slate-300 rounded-lg font-semibold transition-all hover:bg-slate-100 hover:border-slate-400 sm:min-w-[150px]"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-8 py-4 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 flex items-center justify-center gap-3 min-w-[250px] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-8 py-4 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 flex items-center justify-center gap-3 sm:min-w-[250px] disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ 
                     background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
                     boxShadow: isSubmitting ? 'none' : '0 8px 20px rgba(249, 115, 22, 0.3)'
@@ -560,13 +560,13 @@ export const ProposeActivityPage: React.FC = () => {
             </form>
 
             {/* Info Note */}
-            <div 
-              className="mx-10 mb-10 p-8 rounded-xl flex gap-6 items-start relative overflow-hidden text-white"
+            <div
+              className="mx-4 sm:mx-10 mb-6 sm:mb-10 p-5 sm:p-8 rounded-xl flex gap-4 items-start relative overflow-hidden text-white"
               style={{ background: 'linear-gradient(135deg, #172d45 0%, #2a4f73 100%)' }}
             >
-              <Info className="w-8 h-8 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-xl font-bold mb-4">
+              <Info className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold mb-4">
                   Ce qui se passe ensuite
                 </h3>
                 <ul className="space-y-3">
