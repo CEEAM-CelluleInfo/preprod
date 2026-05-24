@@ -599,21 +599,21 @@ export const ActivitiesPage: React.FC = () => {
         </div>
 
         {/* Proposal Section */}
-        <div className="max-w-7xl mx-auto px-6 py-12 my-16">
-          <div className="text-center p-12 rounded-2xl border-2 border-orange-300" 
-            style={{ 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 my-8 sm:my-16">
+          <div className="text-center p-5 sm:p-8 md:p-12 rounded-2xl border-2 border-orange-300"
+            style={{
               background: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)',
               boxShadow: '0 8px 24px rgba(249, 115, 22, 0.15)'
             }}
           >
-            <h2 className="text-4xl font-bold text-orange-700 mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-orange-700 mb-4">
               Une Idée d'Activité ?
             </h2>
-            <p className="text-gray-600 mb-8 leading-relaxed text-lg max-w-2xl mx-auto">
-              Vous avez une idée d'activité ou d'événement que vous aimeriez organiser ? 
+            <p className="text-gray-600 mb-6 sm:mb-8 leading-relaxed text-base sm:text-lg max-w-2xl mx-auto">
+              Vous avez une idée d'activité ou d'événement que vous aimeriez organiser ?
               Partagez-la avec nous et contribuez à enrichir la vie étudiante de la CEEAM !
             </p>
-            <Link to="/proposer-activite" className="px-10 py-4 bg-orange-600 text-white rounded-lg text-lg font-semibold transition-all duration-300 hover:bg-orange-700 hover:-translate-y-0.5 inline-flex items-center gap-2"
+            <Link to="/proposer-activite" className="px-6 sm:px-8 md:px-10 py-3 sm:py-4 bg-orange-600 text-white rounded-lg text-base sm:text-lg font-semibold transition-all duration-300 hover:bg-orange-700 hover:-translate-y-0.5 inline-flex items-center gap-2"
               style={{ boxShadow: '0 4px 12px rgba(194, 65, 12, 0.3)' }}
             >
               <Sparkles className="w-5 h-5" />

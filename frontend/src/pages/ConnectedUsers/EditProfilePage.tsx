@@ -716,7 +716,7 @@ const EditProfilePage = () => {
                 <p className="text-gray-500 text-center py-4 italic">Aucun historique enregistré</p>
               ) : (
                 historique.map((item) => (
-                  <div key={item.id} className="flex items-start gap-4 p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
+                  <div key={item.id} className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
                     {editingHistoriqueId === item.id && editingHistoriqueEntry ? (
                       <div className="flex-grow space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -757,20 +757,34 @@ const EditProfilePage = () => {
                       </div>
                     ) : (
                       <>
-                        <div className="flex-shrink-0 flex flex-col gap-1">
-                          <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full border border-orange-300">
-                            {HISTORIQUE_TYPE_LABELS[item.entryType] || item.entryType}
-                          </span>
-                          <span className="text-xs text-gray-500 text-center">
-                            {item.startDate}{item.isCurrent ? ' - Présent' : item.endDate ? ` - ${item.endDate}` : ''}
-                          </span>
+                        {/* Badge + dates — sur mobile: prend toute la largeur avec boutons à droite */}
+                        <div className="w-full sm:w-auto flex-shrink-0 flex flex-row sm:flex-col items-start justify-between sm:justify-start gap-2 sm:gap-1">
+                          <div className="flex flex-col gap-1">
+                            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full border border-orange-300 leading-tight">
+                              {HISTORIQUE_TYPE_LABELS[item.entryType] || item.entryType}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {item.startDate}{item.isCurrent ? ' - Présent' : item.endDate ? ` - ${item.endDate}` : ''}
+                            </span>
+                          </div>
+                          {/* Boutons visibles uniquement sur mobile */}
+                          <div className="flex sm:hidden items-start gap-2 flex-shrink-0">
+                            <button type="button" onClick={() => handleStartEditHistorique(item)} disabled={historiqueLoading} className="px-3 py-1.5 border border-orange-300 text-orange-700 rounded-md text-xs font-medium hover:bg-orange-50 disabled:opacity-50">
+                              Modifier
+                            </button>
+                            <button type="button" onClick={() => item.id && handleRemoveHistorique(item.id)} disabled={historiqueLoading} className="px-3 py-1.5 border border-red-300 text-red-700 rounded-md text-xs font-medium hover:bg-red-50 disabled:opacity-50">
+                              Supprimer
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex-grow">
-                          <p className="font-bold text-gray-800">{item.title}</p>
-                          {item.organization && <p className="text-sm text-gray-600">{item.organization}{item.location ? `, ${item.location}` : ''}</p>}
-                          {item.description && <p className="text-sm text-gray-500 mt-1">{item.description}</p>}
+                        {/* Contenu */}
+                        <div className="flex-grow min-w-0">
+                          <p className="font-bold text-gray-800 break-words">{item.title}</p>
+                          {item.organization && <p className="text-sm text-gray-600 break-words">{item.organization}{item.location ? `, ${item.location}` : ''}</p>}
+                          {item.description && <p className="text-sm text-gray-500 mt-1 break-words">{item.description}</p>}
                         </div>
-                        <div className="flex items-start gap-2">
+                        {/* Boutons visibles uniquement sur desktop */}
+                        <div className="hidden sm:flex items-start gap-2 flex-shrink-0">
                           <button type="button" onClick={() => handleStartEditHistorique(item)} disabled={historiqueLoading} className="px-3 py-1.5 border border-orange-300 text-orange-700 rounded-md text-xs font-medium hover:bg-orange-50 disabled:opacity-50">
                             Modifier
                           </button>

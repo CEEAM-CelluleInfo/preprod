@@ -197,8 +197,8 @@ export const ProposeActivityPage: React.FC = () => {
       
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         {/* Header avec gradient orange */}
-        <header 
-          className="text-white px-6 py-16 relative overflow-hidden"
+        <header
+          className="text-white px-4 sm:px-6 py-10 sm:py-16 relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)' }}
         >
           {/* Background pattern */}
@@ -223,13 +223,13 @@ export const ProposeActivityPage: React.FC = () => {
 
             {/* Title Section */}
             <div className="text-center max-w-3xl mx-auto">
-              <h1 
-                className="text-6xl font-extrabold mb-4"
+              <h1
+                className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-4"
                 style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)' }}
               >
                 Proposer une Activité
               </h1>
-              <p className="text-xl opacity-95 leading-relaxed">
+              <p className="text-base sm:text-xl opacity-95 leading-relaxed">
                 Vous avez une idée brillante ? Partagez-la avec la communauté CEEAM et 
                 contribuez à enrichir notre vie étudiante !
               </p>
@@ -238,9 +238,9 @@ export const ProposeActivityPage: React.FC = () => {
         </header>
 
         {/* Form Container */}
-        <div className="max-w-5xl mx-auto px-6 py-12 -mt-8 relative z-20">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-8 sm:py-12 -mt-8 relative z-20">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <form onSubmit={handleSubmit} className="p-10">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 md:p-10">
               {feedbackCard && (
                 <div
                   className={`mb-8 rounded-2xl border p-4 shadow-sm ${
@@ -284,7 +284,7 @@ export const ProposeActivityPage: React.FC = () => {
                   Informations Générales
                 </h2>
 
-                <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-slate-700 text-sm relative">
                       Nom de l'activité
@@ -359,7 +359,7 @@ export const ProposeActivityPage: React.FC = () => {
                   Date et Lieu
                 </h2>
 
-                <div className="grid grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-6">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-slate-700 text-sm relative">
                       Date
@@ -437,7 +437,7 @@ export const ProposeActivityPage: React.FC = () => {
                   Participants et Budget
                 </h2>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-slate-700 text-sm">
                       Nombre de participants attendus
@@ -477,7 +477,7 @@ export const ProposeActivityPage: React.FC = () => {
                   Contact et Média
                 </h2>
 
-                <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-slate-700 text-sm">
                       Votre email de contact
@@ -552,18 +552,18 @@ export const ProposeActivityPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-center gap-6 mt-12 pt-8 border-t-2 border-slate-100">
+              <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t-2 border-slate-100">
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-8 py-4 bg-white text-slate-600 border-2 border-slate-300 rounded-lg font-semibold transition-all hover:bg-slate-100 hover:border-slate-400 min-w-[150px]"
+                  className="w-full sm:w-auto px-8 py-4 bg-white text-slate-600 border-2 border-slate-300 rounded-lg font-semibold transition-all hover:bg-slate-100 hover:border-slate-400 sm:min-w-[150px]"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-8 py-4 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 flex items-center justify-center gap-3 min-w-[250px] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-8 py-4 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 flex items-center justify-center gap-3 sm:min-w-[250px] disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ 
                     background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
                     boxShadow: isSubmitting ? 'none' : '0 8px 20px rgba(249, 115, 22, 0.3)'
@@ -585,11 +585,11 @@ export const ProposeActivityPage: React.FC = () => {
             </form>
 
             {/* Info Note */}
-            <div 
-              className="mx-10 mb-10 p-8 rounded-xl flex gap-6 items-start relative overflow-hidden text-white"
+            <div
+              className="mx-4 sm:mx-10 mb-6 sm:mb-10 p-4 sm:p-8 rounded-xl flex gap-4 sm:gap-6 items-start relative overflow-hidden text-white"
               style={{ background: 'linear-gradient(135deg, #172d45 0%, #2a4f73 100%)' }}
             >
-              <Info className="w-8 h-8 flex-shrink-0" />
+              <Info className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h3 className="text-xl font-bold mb-4">
                   Ce qui se passe ensuite

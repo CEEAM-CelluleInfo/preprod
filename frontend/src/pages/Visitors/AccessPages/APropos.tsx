@@ -407,7 +407,7 @@ export const APropos: React.FC = () => {
                       />
                     ) : (
                       <div className="flex h-full min-h-[320px] items-center justify-center bg-[linear-gradient(135deg,_#10263d_0%,_#1c4271_100%)] text-white">
-                        <span className="text-7xl font-bold">
+                        <span className="text-4xl sm:text-6xl md:text-7xl font-bold">
                           {currentLeader.prenom[0]}
                           {currentLeader.nom[0]}
                         </span>

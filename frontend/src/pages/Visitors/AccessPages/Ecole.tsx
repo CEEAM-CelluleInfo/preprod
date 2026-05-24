@@ -272,7 +272,7 @@ export const Ecole: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {heroMedia.pos1 && (
                   <div className="overflow-hidden rounded-[26px] border border-white/12 bg-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.16)]">
                     <img src={heroMedia.pos1.url} alt={heroMedia.pos1.alt} className="h-44 w-full object-cover sm:h-52" />
