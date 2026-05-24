@@ -958,7 +958,7 @@ const CPanel = () => {
                   <p className="text-sm text-slate-500 lg:text-right">{classrooms.length} classroom(s)</p>
                 )}
               </>
-            ) : (
+            ) : activeSection === ‘leaders’ ? null : (
               <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <p className="max-w-2xl text-sm leading-6 text-slate-500">
                   Aujourd’hui les postes officiels sont préremplis à la création d’une session. Tu peux maintenant compléter ou ajuster la configuration en définissant toi-même les postes et les candidats par poste, sans jamais exposer qui a voté pour qui.
