@@ -306,6 +306,45 @@ export async function apiPatch<T>(
 }
 
 /**
+ * Effectue une requête PATCH multipart/form-data vers l'API
+ */
+export async function apiPatchFormData<T>(
+  endpoint: string,
+  formData: FormData,
+  requireAuth: boolean = true
+): Promise<T> {
+  const headers: HeadersInit = {
+    Accept: 'application/json',
+  };
+
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'PATCH',
+    headers,
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (response.status === 401 && requireAuth) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'PATCH',
+        headers,
+        credentials: 'include',
+        body: formData,
+      });
+    }
+  }
+
+  if (!response.ok) {
+    const error = (await parseResponseBody<Record<string, any>>(response).catch(() => null)) || { detail: 'Erreur réseau' };
+    throw new ApiError(response.status, error.detail || 'Erreur lors de la requête', error);
+  }
+
+  return (await parseResponseBody<T>(response)) as T;
+}
+
+/**
  * Effectue une requête DELETE vers l'API
  */
 export async function apiDelete(endpoint: string, requireAuth: boolean = true): Promise<void> {

@@ -3998,7 +3998,7 @@ class AboutLeadersView(APIView):
                 'campus': leader.campus,
                 'filiere': leader.filiere,
                 'promotion': '',
-                'image': leader.image or '',
+                'image': leader.image.url if leader.image else '',
             })
 
         # ── Source 2 : BureauMember SG enregistrés sur la plateforme ───────────

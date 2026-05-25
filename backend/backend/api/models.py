@@ -1262,7 +1262,7 @@ class Leader(models.Model):
     mandat = models.CharField(max_length=20)             # ex: "2025-2026"
     mission = models.TextField(max_length=500)
     linkedin = models.URLField(blank=True, null=True)
-    image = models.URLField(blank=True, null=True)       # URL photo
+    image = models.FileField(upload_to='leaders/', blank=True, null=True)
     order = models.PositiveIntegerField(default=0)       # ordre dans le carrousel
     is_active = models.BooleanField(default=True)        # afficher ou non
 

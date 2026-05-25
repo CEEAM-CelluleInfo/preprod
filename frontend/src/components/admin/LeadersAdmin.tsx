@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Pencil, Trash2, X, Check } from 'lucide-react';
-import { apiGet, apiPost, apiPut, apiDelete } from '@/services/api.config';
+import { useState, useEffect, useRef } from 'react';
+import { Pencil, Trash2, X, Check, Upload } from 'lucide-react';
+import { apiGet, apiPostFormData, apiPatchFormData, apiDelete } from '@/services/api.config';
 
 interface HistoricalSG {
   id: number;
@@ -9,7 +9,7 @@ interface HistoricalSG {
   mandat: string;
   campus: string;
   filiere: string;
-  image: string;
+  image: string | null;
   linkedin: string;
   position: string;
   is_active: boolean;
@@ -21,18 +21,20 @@ const emptyForm = {
   mandat: '',
   campus: '',
   filiere: '',
-  image: '',
   linkedin: '',
 };
 
 const LeadersAdmin = () => {
   const [leaders, setLeaders] = useState<HistoricalSG[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchLeaders = async () => {
     setLoading(true);
@@ -54,6 +56,14 @@ const LeadersAdmin = () => {
     setFeedback({ type, msg });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleEdit = (leader: HistoricalSG) => {
     setEditingId(leader.id);
     setForm({
@@ -62,14 +72,19 @@ const LeadersAdmin = () => {
       mandat: leader.mandat,
       campus: leader.campus,
       filiere: leader.filiere,
-      image: leader.image,
       linkedin: leader.linkedin,
     });
+    setImageFile(null);
+    setImagePreview(leader.image || null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleCancel = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,27 +94,37 @@ const LeadersAdmin = () => {
       return;
     }
     setSaving(true);
-    const payload = {
-      ...form,
-      position: 'Secrétaire Général',
-      executive: `Bureau ${form.mandat}`,
-      email: '',
-      nationality: '',
-      flag: '',
-      mission: '',
-      is_active: true,
-      order: 0,
-    };
+    const fd = new FormData();
+    fd.append('nom', form.nom);
+    fd.append('prenom', form.prenom);
+    fd.append('mandat', form.mandat);
+    fd.append('campus', form.campus);
+    fd.append('filiere', form.filiere);
+    fd.append('linkedin', form.linkedin);
+    fd.append('position', 'Secrétaire Général');
+    fd.append('executive', `Bureau ${form.mandat}`);
+    fd.append('email', '');
+    fd.append('nationality', '');
+    fd.append('flag', '');
+    fd.append('mission', '');
+    fd.append('is_active', 'true');
+    fd.append('order', '0');
+    if (imageFile) {
+      fd.append('image', imageFile);
+    }
     try {
       if (editingId !== null) {
-        await apiPut(`/historical-sg/${editingId}/`, payload, true);
+        await apiPatchFormData(`/historical-sg/${editingId}/`, fd, true);
         notify('Ancien SG mis à jour.', 'success');
       } else {
-        await apiPost('/historical-sg/', payload, true);
+        await apiPostFormData('/historical-sg/', fd, true);
         notify('Ancien SG ajouté.', 'success');
       }
       setEditingId(null);
       setForm(emptyForm);
+      setImageFile(null);
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       await fetchLeaders();
     } catch {
       notify('Erreur lors de la sauvegarde.', 'error');
@@ -121,7 +146,6 @@ const LeadersAdmin = () => {
 
   return (
     <div className="space-y-6">
-      {/* Feedback */}
       {feedback && (
         <div className={`flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-medium ${
           feedback.type === 'success'
@@ -133,14 +157,12 @@ const LeadersAdmin = () => {
         </div>
       )}
 
-      {/* Erreur de chargement liste */}
       {fetchError && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {fetchError}
         </div>
       )}
 
-      {/* Formulaire */}
       <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
         <h3 className="mb-4 text-base font-bold text-slate-900">
           {editingId !== null ? 'Modifier un ancien SG' : 'Ajouter un ancien Secrétaire Général'}
@@ -196,16 +218,30 @@ const LeadersAdmin = () => {
               className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-[#f59f24] focus:ring-2 focus:ring-[#f59f24]/20"
             />
           </div>
+
+          {/* Photo upload */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-600">URL Photo</label>
-            <input
-              type="url"
-              value={form.image}
-              onChange={(e) => setForm({ ...form, image: e.target.value })}
-              placeholder="https://..."
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-[#f59f24] focus:ring-2 focus:ring-[#f59f24]/20"
-            />
+            <label className="text-xs font-semibold text-slate-600">Photo</label>
+            {imagePreview && (
+              <img
+                src={imagePreview}
+                alt="Aperçu"
+                className="mb-1 h-14 w-14 rounded-full object-cover ring-2 ring-slate-200"
+              />
+            )}
+            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500 transition hover:border-[#f59f24] hover:text-slate-700">
+              <Upload className="h-4 w-4 shrink-0" />
+              <span className="truncate">{imageFile ? imageFile.name : 'Choisir une photo...'}</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
           </div>
+
           <div className="flex flex-col gap-1 sm:col-span-2">
             <label className="text-xs font-semibold text-slate-600">LinkedIn</label>
             <input
@@ -239,7 +275,6 @@ const LeadersAdmin = () => {
         </form>
       </div>
 
-      {/* Liste */}
       <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="border-b border-slate-100 px-5 py-4">
           <h3 className="text-base font-bold text-slate-900">

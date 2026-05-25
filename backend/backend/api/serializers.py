@@ -1478,6 +1478,7 @@ class LeaderSerializer(serializers.ModelSerializer):
     filiere    = serializers.CharField(required=False, allow_blank=True, default='')
     campus     = serializers.CharField(required=False, allow_blank=True, default='')
     mission    = serializers.CharField(required=False, allow_blank=True, default='')
+    image      = serializers.FileField(required=False, allow_null=True, use_url=True)
 
     class Meta:
         model = Leader
