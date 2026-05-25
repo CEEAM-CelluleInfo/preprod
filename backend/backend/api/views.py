@@ -3973,10 +3973,10 @@ class AboutStatsView(APIView):
 
 
 class HistoricalSGViewSet(viewsets.ModelViewSet):
-    """CRUD pour les anciens SG saisis manuellement (avant plateforme). Admin only en écriture."""
+    """CRUD pour les anciens SG saisis manuellement (avant plateforme). Bureau/Admin en écriture."""
     queryset = Leader.objects.all().order_by('-mandat', 'order')
     serializer_class = LeaderSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsBureauOrAdmin]
 
 
 class AboutLeadersView(APIView):

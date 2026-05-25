@@ -30,18 +30,19 @@ const LeadersAdmin = () => {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const fetchLeaders = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await apiGet<{ results: HistoricalSG[] } | HistoricalSG[]>('/historical-sg/');
-      const list = Array.isArray(res) ? res : res.results ?? [];
+      const list = Array.isArray(res) ? res : (res as { results: HistoricalSG[] }).results ?? [];
       setLeaders(list);
     } catch {
-      setError('Impossible de charger la liste des anciens SG.');
+      setFetchError('Impossible de charger la liste des anciens SG.');
     } finally {
       setLoading(false);
     }
@@ -50,9 +51,7 @@ const LeadersAdmin = () => {
   useEffect(() => { fetchLeaders(); }, []);
 
   const notify = (msg: string, type: 'success' | 'error') => {
-    if (type === 'success') { setSuccess(msg); setError(null); }
-    else { setError(msg); setSuccess(null); }
-    setTimeout(() => { setSuccess(null); setError(null); }, 4000);
+    setFeedback({ type, msg });
   };
 
   const handleEdit = (leader: HistoricalSG) => {
@@ -123,13 +122,21 @@ const LeadersAdmin = () => {
   return (
     <div className="space-y-6">
       {/* Feedback */}
-      {(success || error) && (
-        <div className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
-          success
+      {feedback && (
+        <div className={`flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-medium ${
+          feedback.type === 'success'
             ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
             : 'border-red-200 bg-red-50 text-red-800'
         }`}>
-          {success || error}
+          <span>{feedback.msg}</span>
+          <button type="button" onClick={() => setFeedback(null)} className="shrink-0 opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
+
+      {/* Erreur de chargement liste */}
+      {fetchError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {fetchError}
         </div>
       )}
 
