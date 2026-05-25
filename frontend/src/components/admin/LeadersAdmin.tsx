@@ -58,6 +58,11 @@ const LeadersAdmin = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+    if (file && file.size > 5 * 1024 * 1024) {
+      notify('La photo ne doit pas dépasser 5 MB.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setImageFile(file);
     if (file) {
       setImagePreview(URL.createObjectURL(file));
