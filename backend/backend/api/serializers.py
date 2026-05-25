@@ -1470,6 +1470,15 @@ class AboutStatSerializer(serializers.ModelSerializer):
 
 
 class LeaderSerializer(serializers.ModelSerializer):
+    position   = serializers.CharField(required=False, allow_blank=True, default='Secrétaire Général')
+    executive  = serializers.CharField(required=False, allow_blank=True, default='')
+    email      = serializers.EmailField(required=False, allow_blank=True, default='')
+    nationality = serializers.CharField(required=False, allow_blank=True, default='')
+    flag       = serializers.CharField(required=False, allow_blank=True, default='')
+    filiere    = serializers.CharField(required=False, allow_blank=True, default='')
+    campus     = serializers.CharField(required=False, allow_blank=True, default='')
+    mission    = serializers.CharField(required=False, allow_blank=True, default='')
+
     class Meta:
         model = Leader
         fields = [
