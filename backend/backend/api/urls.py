@@ -251,12 +251,13 @@ urlpatterns = [
     path('activities/propose/<int:pk>/review/', views.ReviewActivityProposalView.as_view(), name='review_proposal'),
     path('activities/propose/pending/', views.PendingProposalsView.as_view(), name='pending_proposals'),
     path('activities/events/upcoming/', views.UpcomingEventsView.as_view(), name='upcoming-events'),
-    # Classroom: classes, subjects, resources
+    # Classroom: classes > semestres > matières > ressources
     path('classroom/', views.ClassroomListCreateView.as_view(), name='classroom_list'),
     path('classroom/<int:classroom_id>/', views.ClassroomDetailView.as_view(), name='classroom_detail'),
-    path('classroom/<int:classroom_id>/subjects/', views.SubjectListCreateView.as_view(), name='subject_list'),
-    path('classroom/<int:classroom_id>/subjects/<int:subject_id>/', views.SubjectDetailView.as_view(), name='subject_detail'),
-    path('classroom/<int:classroom_id>/subjects/<int:subject_id>/resources/', views.ResourceListCreateView.as_view(), name='resource_list'),
-    path('classroom/<int:classroom_id>/subjects/<int:subject_id>/resources/<int:resource_id>/', views.ResourceDetailView.as_view(), name='resource_detail'),
+    path('classroom/<int:classroom_id>/semesters/', views.SemesterListCreateView.as_view(), name='semester_list'),
+    path('classroom/<int:classroom_id>/semesters/<int:semester_id>/subjects/', views.SubjectListCreateView.as_view(), name='subject_list'),
+    path('classroom/<int:classroom_id>/semesters/<int:semester_id>/subjects/<int:subject_id>/', views.SubjectDetailView.as_view(), name='subject_detail'),
+    path('classroom/<int:classroom_id>/semesters/<int:semester_id>/subjects/<int:subject_id>/resources/', views.ResourceListCreateView.as_view(), name='resource_list'),
+    path('classroom/<int:classroom_id>/semesters/<int:semester_id>/subjects/<int:subject_id>/resources/<int:resource_id>/', views.ResourceDetailView.as_view(), name='resource_detail'),
 ]
 

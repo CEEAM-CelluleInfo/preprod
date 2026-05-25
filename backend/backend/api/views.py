@@ -34,7 +34,7 @@ from .models import (
     ContentSection, AcademicDate, Club,
     VoteSession, Position, Candidate, Vote,
     Announcement, SchoolGuide, Notification, AuditLog,
-    Classroom, Subject, Resource,
+    Classroom, Semester, Subject, Resource,
 )
 from .serializers import (
     UserSerializer, PublicUserListSerializer, UserCreateSerializer, CountrySerializer, SpecialiteSerializer, LaureatProfileSerializer,
@@ -50,7 +50,7 @@ from .serializers import (
     RegisterSerializer, LoginSerializer, LogoutSerializer,
     EmailVerificationSerializer, ResendVerificationEmailSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer, PasswordChangeSerializer, LaureatDetailSerializer,
-    ClassroomSerializer, SubjectSerializer, ResourceSerializer,
+    ClassroomSerializer, SemesterSerializer, SubjectSerializer, ResourceSerializer,
 )
 from .token_service import (
     EmailVerificationTokenService,
@@ -4519,6 +4519,10 @@ class UpcomingEventsView(APIView):
 # Classroom API views
 # =====================================================
 
+def _is_classroom_manager(user):
+    role = (getattr(user, 'role', '') or '').lower()
+    return user and (user.is_staff or user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))
+
 
 class ClassroomListCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -4529,14 +4533,14 @@ class ClassroomListCreateView(APIView):
         return Response({'data': serializer.data})
 
     def post(self, request):
-        # Admin/bureau-only creation (allow app roles 'admin' or 'bureau')
-        role = (getattr(request.user, 'role', '') or '').lower()
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
         serializer = ClassroomSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            classroom = serializer.save()
+            # Auto-create the 2 semesters
+            Semester.objects.create(classroom=classroom, number=1)
+            Semester.objects.create(classroom=classroom, number=2)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -4554,12 +4558,10 @@ class ClassroomDetailView(APIView):
         classroom = self.get_object(classroom_id)
         if not classroom:
             return Response({'error': 'Classe non trouvée'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ClassroomSerializer(classroom, context={'request': request})
-        return Response(serializer.data)
+        return Response(ClassroomSerializer(classroom, context={'request': request}).data)
 
     def put(self, request, classroom_id):
-        role = (getattr(request.user, 'role', '') or '').lower()
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         classroom = self.get_object(classroom_id)
         if not classroom:
@@ -4571,8 +4573,7 @@ class ClassroomDetailView(APIView):
         return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, classroom_id):
-        role = (getattr(request.user, 'role', '') or '').lower()
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         classroom = self.get_object(classroom_id)
         if not classroom:
@@ -4581,20 +4582,37 @@ class ClassroomDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SubjectListCreateView(APIView):
+class SemesterListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, classroom_id):
-        subjects = Subject.objects.filter(classroom_id=classroom_id).order_by('display_order', 'title')
-        serializer = SubjectSerializer(subjects, many=True, context={'request': request})
-        return Response({'data': serializer.data})
+        semesters = Semester.objects.filter(classroom_id=classroom_id).order_by('number')
+        return Response({'data': SemesterSerializer(semesters, many=True).data})
 
     def post(self, request, classroom_id):
-        role = (getattr(request.user, 'role', '') or '').lower()
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         data = request.data.copy()
         data['classroom'] = classroom_id
+        serializer = SemesterSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubjectListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, classroom_id, semester_id):
+        subjects = Subject.objects.filter(semester_id=semester_id).order_by('display_order', 'title')
+        return Response({'data': SubjectSerializer(subjects, many=True, context={'request': request}).data})
+
+    def post(self, request, classroom_id, semester_id):
+        if not _is_classroom_manager(request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        data = request.data.copy()
+        data['semester'] = semester_id
         serializer = SubjectSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -4605,24 +4623,22 @@ class SubjectListCreateView(APIView):
 class SubjectDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, classroom_id, subject_id):
+    def get_object(self, semester_id, subject_id):
         try:
-            return Subject.objects.get(pk=subject_id, classroom_id=classroom_id)
+            return Subject.objects.get(pk=subject_id, semester_id=semester_id)
         except Subject.DoesNotExist:
             return None
 
-    def get(self, request, classroom_id, subject_id):
-        subject = self.get_object(classroom_id, subject_id)
+    def get(self, request, classroom_id, semester_id, subject_id):
+        subject = self.get_object(semester_id, subject_id)
         if not subject:
             return Response({'error': 'Matière non trouvée'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = SubjectSerializer(subject, context={'request': request})
-        return Response(serializer.data)
+        return Response(SubjectSerializer(subject, context={'request': request}).data)
 
-    def put(self, request, classroom_id, subject_id):
-        role = (getattr(request.user, 'role', '') or '').lower()
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
+    def put(self, request, classroom_id, semester_id, subject_id):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        subject = self.get_object(classroom_id, subject_id)
+        subject = self.get_object(semester_id, subject_id)
         if not subject:
             return Response({'error': 'Matière non trouvée'}, status=status.HTTP_404_NOT_FOUND)
         serializer = SubjectSerializer(subject, data=request.data, partial=True)
@@ -4631,11 +4647,10 @@ class SubjectDetailView(APIView):
             return Response(serializer.data)
         return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, classroom_id, subject_id):
-        role = (getattr(request.user, 'role', '') or '').lower()
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
+    def delete(self, request, classroom_id, semester_id, subject_id):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        subject = self.get_object(classroom_id, subject_id)
+        subject = self.get_object(semester_id, subject_id)
         if not subject:
             return Response({'error': 'Matière non trouvée'}, status=status.HTTP_404_NOT_FOUND)
         subject.delete()
@@ -4645,14 +4660,12 @@ class SubjectDetailView(APIView):
 class ResourceListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, classroom_id, subject_id):
-        resources = Resource.objects.filter(subject_id=subject_id).order_by('-created_at')
-        serializer = ResourceSerializer(resources, many=True, context={'request': request})
-        return Response({'data': serializer.data})
+    def get(self, request, classroom_id, semester_id, subject_id):
+        resources = Resource.objects.filter(subject_id=subject_id).order_by('category', '-created_at')
+        return Response({'data': ResourceSerializer(resources, many=True, context={'request': request}).data})
 
-    def post(self, request, classroom_id, subject_id):
-        role = (getattr(request.user, 'role', '') or '').lower()
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or role in ('admin', 'bureau', 'adminpromo', 'admin_promo'))):
+    def post(self, request, classroom_id, semester_id, subject_id):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
         data = request.data.copy()
         data['subject'] = subject_id
@@ -4666,23 +4679,22 @@ class ResourceListCreateView(APIView):
 class ResourceDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, classroom_id, subject_id, resource_id):
+    def get_object(self, subject_id, resource_id):
         try:
             return Resource.objects.get(pk=resource_id, subject_id=subject_id)
         except Resource.DoesNotExist:
             return None
 
-    def get(self, request, classroom_id, subject_id, resource_id):
-        resource = self.get_object(classroom_id, subject_id, resource_id)
+    def get(self, request, classroom_id, semester_id, subject_id, resource_id):
+        resource = self.get_object(subject_id, resource_id)
         if not resource:
             return Response({'error': 'Ressource non trouvée'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ResourceSerializer(resource, context={'request': request})
-        return Response(serializer.data)
+        return Response(ResourceSerializer(resource, context={'request': request}).data)
 
-    def put(self, request, classroom_id, subject_id, resource_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+    def put(self, request, classroom_id, semester_id, subject_id, resource_id):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        resource = self.get_object(classroom_id, subject_id, resource_id)
+        resource = self.get_object(subject_id, resource_id)
         if not resource:
             return Response({'error': 'Ressource non trouvée'}, status=status.HTTP_404_NOT_FOUND)
         serializer = ResourceSerializer(resource, data=request.data, partial=True)
@@ -4691,10 +4703,10 @@ class ResourceDetailView(APIView):
             return Response(serializer.data)
         return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, classroom_id, subject_id, resource_id):
-        if not (request.user and (request.user.is_staff or request.user.is_superuser or getattr(request.user, 'role', None) in ('admin', 'bureau'))):
+    def delete(self, request, classroom_id, semester_id, subject_id, resource_id):
+        if not _is_classroom_manager(request.user):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-        resource = self.get_object(classroom_id, subject_id, resource_id)
+        resource = self.get_object(subject_id, resource_id)
         if not resource:
             return Response({'error': 'Ressource non trouvée'}, status=status.HTTP_404_NOT_FOUND)
         resource.delete()

@@ -14,7 +14,7 @@ from .models import (
     BureauPosition, VoteSession, Position, Candidate, Vote,
     Announcement, ContactMessage, Notification,
     SchoolGuide, Document, FAQ, AboutStat, Leader, AboutContent, PracticalInfo, SchoolMedia, StudentGuide,
-    Classroom, Subject, Resource,
+    Classroom, Semester, Subject, Resource,
 
 )
 
@@ -1597,7 +1597,7 @@ class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resource
         fields = [
-            'id', 'subject', 'title', 'resource_type', 'url', 'description', 'allow_preview', 'created_at', 'updated_at'
+            'id', 'subject', 'title', 'resource_type', 'category', 'url', 'description', 'allow_preview', 'created_at', 'updated_at'
         ]
 
 
@@ -1606,12 +1606,16 @@ class SubjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subject
-        fields = ['id', 'classroom', 'title', 'code', 'description', 'display_order', 'resources']
+        fields = ['id', 'semester', 'title', 'code', 'description', 'display_order', 'resources']
+
+
+class SemesterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Semester
+        fields = ['id', 'classroom', 'number']
 
 
 class ClassroomSerializer(serializers.ModelSerializer):
-    subjects = SubjectSerializer(many=True, read_only=True)
-
     class Meta:
         model = Classroom
-        fields = ['id', 'name', 'code', 'description', 'is_active', 'created_at', 'updated_at', 'subjects']
+        fields = ['id', 'name', 'code', 'description', 'is_active', 'created_at', 'updated_at']

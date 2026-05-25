@@ -1362,9 +1362,24 @@ class Classroom(models.Model):
         return self.name
 
 
+class Semester(models.Model):
+    """Semestre d'une classe (S1 ou S2)."""
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="semesters")
+    number = models.PositiveSmallIntegerField(verbose_name="Numéro du semestre")  # 1 ou 2
+
+    class Meta:
+        verbose_name = "Semestre"
+        verbose_name_plural = "Semestres"
+        unique_together = ("classroom", "number")
+        ordering = ["number"]
+
+    def __str__(self):
+        return f"Semestre {self.number} - {self.classroom.name}"
+
+
 class Subject(models.Model):
-    """Une matière appartenant à une classe."""
-    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="subjects")
+    """Une matière appartenant à un semestre."""
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name="subjects")
     title = models.CharField(max_length=200, verbose_name="Intitulé de la matière")
     code = models.CharField(max_length=50, blank=True, verbose_name="Code (optionnel)")
     description = models.TextField(blank=True, verbose_name="Description")
@@ -1378,11 +1393,11 @@ class Subject(models.Model):
         ordering = ["display_order", "title"]
 
     def __str__(self):
-        return f"{self.title} ({self.classroom.name})"
+        return f"{self.title} ({self.semester})"
 
 
 class Resource(models.Model):
-    """Ressource pédagogique liée à une matière. Principalement des liens (Drive, docs, etc.)."""
+    """Ressource pédagogique liée à une matière (Cours, TD, TP, Examen)."""
 
     RESOURCE_TYPE_CHOICES = [
         ("link", "Lien"),
@@ -1390,9 +1405,17 @@ class Resource(models.Model):
         ("document", "Document"),
     ]
 
+    CATEGORY_CHOICES = [
+        ("cours", "Cours"),
+        ("td", "TD"),
+        ("tp", "TP"),
+        ("examen", "Examen"),
+    ]
+
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="resources")
     title = models.CharField(max_length=300, verbose_name="Titre")
     resource_type = models.CharField(max_length=30, choices=RESOURCE_TYPE_CHOICES, default="link")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="cours", verbose_name="Catégorie")
     url = models.CharField(max_length=1000, verbose_name="URL / lien")
     description = models.TextField(blank=True, verbose_name="Description")
     allow_preview = models.BooleanField(default=True, verbose_name="Autoriser l'aperçu")
@@ -1402,7 +1425,7 @@ class Resource(models.Model):
     class Meta:
         verbose_name = "Ressource"
         verbose_name_plural = "Ressources"
-        ordering = ["-created_at"]
+        ordering = ["category", "-created_at"]
 
     def __str__(self):
         return f"{self.title} ({self.subject.title})"
