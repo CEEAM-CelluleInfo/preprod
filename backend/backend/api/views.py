@@ -4099,7 +4099,7 @@ class HomePageView(APIView):
                 "campus": user.campus or '',
                 "promotion": user.promotion or '',
                 "mission": user.biographie or 'Contribuer à la dynamique de la communauté CEEAM.',
-                "image": (member.image_url if member else '') or user.avatar_url or '',
+                "image": _build_absolute_media_url(request, (member.image_url if member else '') or user.avatar_url or ''),
                 "mandate_year": member.mandate_year if member else current_year,
             })
 

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ArrowRight, Mail, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowRight, MapPin, Briefcase } from "lucide-react";
 import { useState } from "react";
 import { HomeBureauMember } from "@/types/home";
 
@@ -113,33 +113,33 @@ const BureauExecutif = ({ members }: BureauExecutifProps) => {
                         {member.image ? (
                           <img src={member.image} alt={member.name} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-white/30">
+                          <div className="flex h-full w-full items-center justify-center text-5xl font-bold text-white/60 select-none">
                             {member.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
                           </div>
                         )}
-                        <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,_transparent_0%,_rgba(15,23,42,0.8)_100%)] p-5">
+                        <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,_transparent_0%,_rgba(15,23,42,0.85)_100%)] p-5">
                           <div className="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-                            {member.country} {member.role}
+                            {member.country && <span className="mr-1">{member.country}</span>}{member.role}
                           </div>
                         </div>
                       </div>
 
                       <div className="p-5">
-                        <h4 className="text-xl font-bold text-slate-950">{member.name}</h4>
-                        <p className="mt-1 text-sm font-medium text-[#1e40af]">{member.filiere}</p>
-                        <p className="mt-4 text-sm leading-6 text-slate-600">{member.mission}</p>
+                        <h4 className="truncate text-xl font-bold text-slate-950">{member.name}</h4>
+                        <p className="mt-1 truncate text-sm font-medium text-[#1e40af]">{member.filiere || ' '}</p>
+                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">{member.mission}</p>
 
                         <div className="mt-5 space-y-3 rounded-[22px] bg-slate-50 p-4 text-sm text-slate-600">
+                          <div className="flex items-center gap-3">
+                            <Briefcase className="h-4 w-4 shrink-0 text-[#f59f24]" />
+                            <span className="truncate font-medium">{member.role}</span>
+                          </div>
                           {member.campus && (
                             <div className="flex items-center gap-3">
                               <MapPin className="h-4 w-4 shrink-0 text-[#f59f24]" />
-                              <span>{member.campus}</span>
+                              <span className="truncate">{member.campus}</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-3">
-                            <Mail className="h-4 w-4 shrink-0 text-[#f59f24]" />
-                            <span>{member.role}</span>
-                          </div>
                         </div>
                       </div>
                     </article>
