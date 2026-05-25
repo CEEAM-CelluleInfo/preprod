@@ -1351,21 +1351,15 @@ class LoginView(APIView):
 
         if existing_user is None:
             return Response(
-                {
-                    'error': "Aucun compte n'est associé à cette adresse email.",
-                    'error_code': 'user_not_found',
-                },
-                status=status.HTTP_404_NOT_FOUND
+                {'error': 'Les informations saisies sont incorrectes. Veuillez réessayer.'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
-        
+
         user = authenticate(request, username=existing_user.email, password=password)
-        
+
         if user is None:
             return Response(
-                {
-                    'error': 'Mot de passe incorrect. Veuillez réessayer.',
-                    'error_code': 'invalid_password',
-                },
+                {'error': 'Les informations saisies sont incorrectes. Veuillez réessayer.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         

@@ -164,14 +164,13 @@ const Connexion = () => {
         localStorage.removeItem("redirectActivityId");
         localStorage.removeItem("loginMessageType");
       } else {
-        const errorMsg = "Identifiants incorrects. Vérifiez votre email et mot de passe.";
+        const errorMsg = "Les informations saisies sont incorrectes. Veuillez réessayer.";
         setError(errorMsg);
         showLoginToast("Connexion impossible", errorMsg, 'error', 4000);
       }
     } catch (err: any) {
       console.error("Erreur de connexion:", err);
       const errorResponse = err instanceof ApiError ? err.data : err || {};
-      const errorCode = errorResponse.error_code || errorResponse.code || '';
       const serverMessage =
         errorResponse.detail ||
         errorResponse.error ||
@@ -182,19 +181,8 @@ const Connexion = () => {
         const msg = "Veuillez vérifier votre email avant de vous connecter. Un email de vérification vous a été envoyé lors de votre inscription.";
         setError(msg);
         showLoginToast("Email non vérifié", msg, 'warning', 6000);
-      } else if (errorCode === 'user_not_found') {
-        const msg = "Aucun compte n'est associé à cette adresse email. Vérifiez l'orthographe ou créez un compte.";
-        setError(msg);
-        showLoginToast("Compte introuvable", msg, 'error', 5000);
-      } else if (errorCode === 'invalid_password') {
-        const msg = "Le mot de passe saisi est incorrect. Veuillez réessayer.";
-        setError(msg);
-        showLoginToast("Mot de passe incorrect", msg, 'error', 4500);
-      } else if (serverMessage) {
-        setError(serverMessage);
-        showLoginToast("Connexion impossible", serverMessage, 'error', 4000);
       } else {
-        const msg = "Identifiants incorrects. Vérifiez votre email et mot de passe.";
+        const msg = "Les informations saisies sont incorrectes. Veuillez réessayer.";
         setError(msg);
         showLoginToast("Connexion impossible", msg, 'error', 4000);
       }
