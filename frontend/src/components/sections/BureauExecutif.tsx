@@ -9,54 +9,9 @@ interface BureauExecutifProps {
 const BureauExecutif = ({ members }: BureauExecutifProps) => {
   const [currentPage, setCurrentPage] = useState(0);
 
-  const fallbackMembers: HomeBureauMember[] = [
-    {
-      id: 1,
-      name: "Nadia Mensah",
-      role: "Secrétaire Générale",
-      filiere: "Génie Industriel",
-      country: "🇹🇬",
-      campus: "Campus de Metz",
-      mission: "Coordonner les actions du bureau et garantir une expérience claire pour toute la communauté.",
-      image: "/images/sg1.jpg",
-      mandate_year: "2025-2026",
-    },
-    {
-      id: 2,
-      name: "Yao Koffi",
-      role: "Vice-président",
-      filiere: "Génie Mécanique",
-      country: "🇨🇮",
-      campus: "Campus d'Aix-en-Provence",
-      mission: "Renforcer les liens entre les nouveaux arrivants, les promotions et les anciens membres.",
-      image: "/images/sg5.jpg",
-      mandate_year: "2025-2026",
-    },
-    {
-      id: 3,
-      name: "Aïcha Ndiaye",
-      role: "Responsable Intégration",
-      filiere: "Génie Civil",
-      country: "🇸🇳",
-      campus: "Campus de Cluny",
-      mission: "Créer des repères concrets dès l'arrivée et faciliter l'intégration académique et sociale.",
-      image: "/images/sg4.avif",
-      mandate_year: "2025-2026",
-    },
-    {
-      id: 4,
-      name: "Prince Ahouansou",
-      role: "Responsable Partenariats",
-      filiere: "Systèmes Énergétiques",
-      country: "🇧🇯",
-      campus: "Campus de Lille",
-      mission: "Développer des opportunités utiles pour les étudiants et valoriser les initiatives du réseau.",
-      image: "/images/sg6.jpg",
-      mandate_year: "2025-2026",
-    },
-  ];
-
-  const data = members && members.length > 0 ? members : fallbackMembers;
+  // members undefined = still loading, empty array = no bureau members yet
+  const isLoading = members === undefined;
+  const data = members ?? [];
 
   const itemsPerPage = 2;
   const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -110,65 +65,100 @@ const BureauExecutif = ({ members }: BureauExecutifProps) => {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Équipe mise en avant</p>
                 <h3 className="mt-2 text-2xl font-bold text-slate-950">Les visages du mandat</h3>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
-                  disabled={currentPage === 0}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:border-[#f59f24] hover:text-[#f59f24] disabled:cursor-not-allowed disabled:opacity-30"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-                  disabled={currentPage === totalPages - 1}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:border-[#f59f24] hover:text-[#f59f24] disabled:cursor-not-allowed disabled:opacity-30"
-                >
-                  <ChevronRight size={18} />
-                </button>
+              {!isLoading && data.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+                    disabled={currentPage === 0}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:border-[#f59f24] hover:text-[#f59f24] disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+                    disabled={currentPage === totalPages - 1}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:border-[#f59f24] hover:text-[#f59f24] disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="mt-6 grid gap-5 lg:grid-cols-2">
+                {[0, 1].map((i) => (
+                  <div key={i} className="animate-pulse overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50">
+                    <div className="aspect-[4/4.2] bg-slate-200" />
+                    <div className="space-y-3 p-5">
+                      <div className="h-5 w-2/3 rounded-lg bg-slate-200" />
+                      <div className="h-4 w-1/2 rounded-lg bg-slate-200" />
+                      <div className="h-16 w-full rounded-lg bg-slate-200" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          {currentMembers.map((member, index) => (
-                <article key={index} className="overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,_#ffffff_0%,_#f8fafc_100%)] shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(15,23,42,0.10)]">
-                  <div className="relative aspect-[4/4.2] bg-[#10263d]">
-                    <img src={member.image} alt={member.name} className="h-full w-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,_transparent_0%,_rgba(15,23,42,0.8)_100%)] p-5">
-                      <div className="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-                        {member.country} {member.role}
+            ) : data.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-sm text-slate-400">
+                  Le bureau pour ce mandat n'a pas encore été configuré.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mt-6 grid gap-5 lg:grid-cols-2">
+                  {currentMembers.map((member, index) => (
+                    <article key={index} className="overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,_#ffffff_0%,_#f8fafc_100%)] shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(15,23,42,0.10)]">
+                      <div className="relative aspect-[4/4.2] bg-[#10263d]">
+                        {member.image ? (
+                          <img src={member.image} alt={member.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-white/30">
+                            {member.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,_transparent_0%,_rgba(15,23,42,0.8)_100%)] p-5">
+                          <div className="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                            {member.country} {member.role}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+
+                      <div className="p-5">
+                        <h4 className="text-xl font-bold text-slate-950">{member.name}</h4>
+                        <p className="mt-1 text-sm font-medium text-[#1e40af]">{member.filiere}</p>
+                        <p className="mt-4 text-sm leading-6 text-slate-600">{member.mission}</p>
+
+                        <div className="mt-5 space-y-3 rounded-[22px] bg-slate-50 p-4 text-sm text-slate-600">
+                          {member.campus && (
+                            <div className="flex items-center gap-3">
+                              <MapPin className="h-4 w-4 shrink-0 text-[#f59f24]" />
+                              <span>{member.campus}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-3">
+                            <Mail className="h-4 w-4 shrink-0 text-[#f59f24]" />
+                            <span>{member.role}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="mt-6 flex items-center justify-center gap-2">
+                    {Array.from({ length: totalPages }).map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPage(index)}
+                        className={index === currentPage ? "dot-indicator-active" : "dot-indicator"}
+                      />
+                    ))}
                   </div>
-
-                  <div className="p-5">
-                    <h4 className="text-xl font-bold text-slate-950">{member.name}</h4>
-                    <p className="mt-1 text-sm font-medium text-[#1e40af]">{member.filiere}</p>
-                    <p className="mt-4 text-sm leading-6 text-slate-600">{member.mission}</p>
-
-                    <div className="mt-5 space-y-3 rounded-[22px] bg-slate-50 p-4 text-sm text-slate-600">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="h-4 w-4 text-[#f59f24]" />
-                        <span>{member.campus}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Mail className="h-4 w-4 text-[#f59f24]" />
-                        <span>{member.role}</span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-          ))}
-            </div>
-
-            <div className="mt-6 flex items-center justify-center gap-2">
-              {Array.from({ length: totalPages }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPage(index)}
-                  className={index === currentPage ? "dot-indicator-active" : "dot-indicator"}
-                />
-              ))}
-            </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

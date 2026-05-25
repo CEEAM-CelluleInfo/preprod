@@ -4079,23 +4079,28 @@ class HomePageView(APIView):
             "valeurs_list": [],
         }
 
-        bureau_members = BureauMember.objects.select_related(
-            'user', 'user__country', 'user__specialite'
-        ).filter(is_current=True).order_by('display_order')[:4]
+        current_year = str(timezone.now().year)
+        bureau_users = User.objects.filter(role='bureau').select_related(
+            'country', 'specialite'
+        ).prefetch_related('bureau_memberships').order_by('id')
 
         bureau_payload = []
-        for member in bureau_members:
+        for user in bureau_users:
+            member = next(
+                (m for m in user.bureau_memberships.all() if m.is_current),
+                None
+            )
             bureau_payload.append({
-                "id": member.id,
-                "name": member.user.full_name.strip() or member.user.email,
-                "role": member.get_position_display(),
-                "filiere": getattr(member.user.specialite, 'intitule', ''),
-                "country": getattr(member.user.country, 'flag_emoji', ''),
-                "campus": member.user.campus,
-                "promotion": member.user.promotion,
-                "mission": member.user.biographie or f"Piloter le mandat {member.mandate_year} et renforcer la dynamique communautaire.",
-                "image": member.image_url or member.user.avatar_url,
-                "mandate_year": member.mandate_year,
+                "id": user.id,
+                "name": user.full_name.strip() or user.email,
+                "role": member.get_position_display() if member else 'Membre du Bureau',
+                "filiere": getattr(user.specialite, 'intitule', ''),
+                "country": getattr(user.country, 'flag_emoji', ''),
+                "campus": user.campus or '',
+                "promotion": user.promotion or '',
+                "mission": user.biographie or 'Contribuer à la dynamique de la communauté CEEAM.',
+                "image": (member.image_url if member else '') or user.avatar_url or '',
+                "mandate_year": member.mandate_year if member else current_year,
             })
 
         upcoming_activities = Activity.objects.filter(
