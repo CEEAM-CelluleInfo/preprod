@@ -59,6 +59,56 @@ const ClassroomPage: React.FC = () => {
     setIsPreviewOpen(true);
   };
 
+  // Classroom form
+  const [showClassroomForm, setShowClassroomForm] = useState(false);
+  const [editingClassroomId, setEditingClassroomId] = useState<number | null>(null);
+  const [classroomForm, setClassroomForm] = useState({ name: '', code: '', description: '', is_active: true });
+
+  const openClassroomForm = (classroom: ClassroomItem | null) => {
+    if (classroom) {
+      setEditingClassroomId(classroom.id);
+      setClassroomForm({ name: classroom.name, code: classroom.code || '', description: classroom.description || '', is_active: classroom.is_active });
+    } else {
+      setEditingClassroomId(null);
+      setClassroomForm({ name: '', code: '', description: '', is_active: true });
+    }
+    setShowClassroomForm(true);
+  };
+
+  const handleSaveClassroom = async () => {
+    if (!classroomForm.name.trim()) return;
+    try {
+      if (editingClassroomId !== null) {
+        await ClassroomService.updateClassroom(editingClassroomId, classroomForm);
+      } else {
+        await ClassroomService.createClassroom(classroomForm);
+      }
+      const data = await ClassroomService.getClassrooms();
+      setClassrooms(data);
+      if (editingClassroomId !== null) {
+        const updated = data.find((c) => c.id === editingClassroomId);
+        if (updated) setSelectedClass(updated);
+      } else {
+        setSelectedClass(data[data.length - 1] || null);
+      }
+      setShowClassroomForm(false);
+    } catch (err) {
+      console.error('Erreur sauvegarde classe', err);
+    }
+  };
+
+  const handleDeleteClassroom = async (id: number) => {
+    if (!confirm('Supprimer cette classe et toutes ses matières / ressources ?')) return;
+    try {
+      await ClassroomService.deleteClassroom(id);
+      const data = await ClassroomService.getClassrooms();
+      setClassrooms(data);
+      setSelectedClass(data[0] || null);
+    } catch (err) {
+      console.error('Erreur suppression classe', err);
+    }
+  };
+
   // Creation states
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectDescription, setNewSubjectDescription] = useState('');
@@ -148,6 +198,81 @@ const ClassroomPage: React.FC = () => {
                 selected={selectedClass}
                 onSelect={(c) => setSelectedClass(c)}
               />
+
+              {canManage && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    onClick={() => openClassroomForm(null)}
+                  >
+                    + Nouvelle classe
+                  </button>
+                  {selectedClass && (
+                    <>
+                      <button
+                        className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                        onClick={() => openClassroomForm(selectedClass)}
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        className="px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200"
+                        onClick={() => handleDeleteClassroom(selectedClass.id)}
+                      >
+                        Supprimer
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {showClassroomForm && (
+                <div className="mt-3 bg-gray-50 p-3 rounded border border-gray-200">
+                  <h3 className="font-semibold text-sm mb-2">
+                    {editingClassroomId !== null ? 'Modifier la classe' : 'Nouvelle classe'}
+                  </h3>
+                  <input
+                    className="w-full p-2 border rounded text-sm mb-2"
+                    placeholder="Nom de la classe *"
+                    value={classroomForm.name}
+                    onChange={(e) => setClassroomForm({ ...classroomForm, name: e.target.value })}
+                  />
+                  <input
+                    className="w-full p-2 border rounded text-sm mb-2"
+                    placeholder="Code (ex: L3-INFO)"
+                    value={classroomForm.code}
+                    onChange={(e) => setClassroomForm({ ...classroomForm, code: e.target.value })}
+                  />
+                  <input
+                    className="w-full p-2 border rounded text-sm mb-2"
+                    placeholder="Description (optionnelle)"
+                    value={classroomForm.description}
+                    onChange={(e) => setClassroomForm({ ...classroomForm, description: e.target.value })}
+                  />
+                  <label className="flex items-center gap-2 text-sm mb-3">
+                    <input
+                      type="checkbox"
+                      checked={classroomForm.is_active}
+                      onChange={(e) => setClassroomForm({ ...classroomForm, is_active: e.target.checked })}
+                    />
+                    Classe active
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      onClick={handleSaveClassroom}
+                    >
+                      Enregistrer
+                    </button>
+                    <button
+                      className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                      onClick={() => setShowClassroomForm(false)}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
