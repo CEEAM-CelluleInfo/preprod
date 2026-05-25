@@ -17,7 +17,7 @@ from .models import (
     Announcement, ContactMessage, Notification,
     SchoolGuide, Document, FAQ,
     AuditLog, AboutStat, Leader, AboutContent, PracticalInfo, SchoolMedia, StudentGuide,
-        Classroom, Subject, Resource,
+        Classroom, Semester, Subject, Resource,
 
 )
 
@@ -379,16 +379,23 @@ class ClassroomAdmin(admin.ModelAdmin):
     search_fields = ["name", "code"]
 
 
+@admin.register(Semester)
+class SemesterAdmin(admin.ModelAdmin):
+    list_display = ["classroom", "number"]
+    list_filter = ["classroom"]
+    ordering = ["classroom", "number"]
+
+
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ["title", "classroom", "display_order"]
-    list_filter = ["classroom"]
+    list_display = ["title", "semester", "display_order"]
+    list_filter = ["semester__classroom"]
     search_fields = ["title"]
-    ordering = ["classroom", "display_order"]
+    ordering = ["semester", "display_order"]
 
 
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
-    list_display = ["title", "subject", "resource_type", "allow_preview", "created_at"]
-    list_filter = ["resource_type", "allow_preview"]
+    list_display = ["title", "subject", "category", "resource_type", "allow_preview", "created_at"]
+    list_filter = ["category", "resource_type", "allow_preview"]
     search_fields = ["title", "url", "subject__title"]
