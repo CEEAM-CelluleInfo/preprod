@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Pencil, Trash2, X, Check, Upload } from 'lucide-react';
-import { apiGet, apiPostFormData, apiPatchFormData, apiDelete } from '@/services/api.config';
+import { apiGet, apiPostFormData, apiPutFormData, apiDelete } from '@/services/api.config';
 
 interface HistoricalSG {
   id: number;
@@ -114,7 +114,7 @@ const LeadersAdmin = () => {
     }
     try {
       if (editingId !== null) {
-        await apiPatchFormData(`/historical-sg/${editingId}/`, fd, true);
+        await apiPutFormData(`/historical-sg/${editingId}/`, fd, true);
         notify('Ancien SG mis à jour.', 'success');
       } else {
         await apiPostFormData('/historical-sg/', fd, true);
@@ -126,8 +126,9 @@ const LeadersAdmin = () => {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       await fetchLeaders();
-    } catch {
-      notify('Erreur lors de la sauvegarde.', 'error');
+    } catch (err: any) {
+      const detail = err?.data ? JSON.stringify(err.data) : (err?.detail || err?.message || 'Erreur lors de la sauvegarde.');
+      notify(detail, 'error');
     } finally {
       setSaving(false);
     }
