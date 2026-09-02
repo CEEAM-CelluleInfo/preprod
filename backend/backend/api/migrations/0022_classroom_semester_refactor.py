@@ -17,6 +17,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('api', '0021_leader_image_to_filefield'),
+        ('api', '0021_5_create_classroom_subject_resource'),
     ]
 
     operations = [
