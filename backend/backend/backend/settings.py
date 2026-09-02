@@ -23,18 +23,15 @@ config = build_config()
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kfw*o=4ou#mkj*bj10jsxy-#o^z%0)jawkh8(3k0l58#e=)g**'
+SECRET_KEY = config('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = [
-    'api.ceaam.org',
-    'ceaam.org',
-    'www.ceaam.org',
-    '13.60.99.150',
-    'localhost',
-    '127.0.0.1',
+    host.strip()
+    for host in config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+    if host.strip()
 ]
 
 
@@ -358,6 +355,10 @@ CORS_ALLOW_HEADERS = [
 # CONFIGURATION DES COOKIES (SÉCURITÉ)
 # ====================================================
 
+# Nginx termine le TLS et forward en HTTP vers Gunicorn : sans ce header,
+# Django ne peut pas savoir que la requête d'origine était bien en HTTPS.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # En production avec HTTPS, activer ces paramètres :
 if not DEBUG:
     # Forcer HTTPS
@@ -400,11 +401,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'souleonetraore.940@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'quwq ijtt lrpv zhaa')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
 # Email par défaut pour les envois
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'CEEAM<souleonetraore.940@gmail.com>')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'CEEAM<no-reply@ceaam.org>')
 
 # URL du frontend pour les liens dans les emails
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://ceaam.org')
@@ -414,3 +415,15 @@ PASSWORD_RESET_TIMEOUT = 15 * 60  # 15 minutes en secondes
 
 # Auth token TTL in seconds (used by legacy API login/verify endpoints)
 AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 24
+
+
+# ====================================================
+# CONFIGURATION CELERY (scaffolding — pas de tâche pour l'instant)
+# ====================================================
+
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/1')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
