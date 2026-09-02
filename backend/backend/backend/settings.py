@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',  # Blacklist pour les tokens révoqués
     'corsheaders',
     'storages',
+    'anymail',
 
     # Local
     'api',
@@ -396,13 +397,23 @@ else:
 #     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 #     # Les emails s'afficheront dans la console Django
 # else:
-# En production, utiliser votre fournisseur d'email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# En production : Resend (API HTTPS) si une clé est fournie — évite le port
+# SMTP 587, bloqué en sortie par défaut chez la plupart des hébergeurs cloud
+# (DigitalOcean inclus). Sinon, repli sur SMTP classique (ex: dev local).
+RESEND_API_KEY = os.getenv('RESEND_API_KEY')
+
+if RESEND_API_KEY:
+    EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+    ANYMAIL = {
+        'RESEND_API_KEY': RESEND_API_KEY,
+    }
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
 # Email par défaut pour les envois
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'CEEAM<no-reply@ceaam.org>')
