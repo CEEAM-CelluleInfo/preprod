@@ -44,4 +44,6 @@ CMD ["gunicorn", "backend.wsgi:application", \
      "--workers", "2", "--threads", "2", "--worker-class", "gthread", \
      "--timeout", "60", "--graceful-timeout", "30", \
      "--max-requests", "500", "--max-requests-jitter", "50", \
-     "--access-logfile", "-", "--error-logfile", "-"]
+     "--forwarded-allow-ips", "*", \
+     "--access-logfile", "-", "--error-logfile", "-", \
+     "--access-logformat", "%({x-forwarded-for}i)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\""]
