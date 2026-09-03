@@ -1,0 +1,50 @@
+name: Déploiement production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Tape "deploy" pour confirmer le déploiement en production'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Vérifier la confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "::error::Confirmation manquante — tape exactement 'deploy' dans le champ prévu."
+            exit 1
+          fi
+
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Déployer sur le serveur
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
+            set -e
+            cd ~/app/backend/backend
+            git pull origin main
+            docker compose build
+            docker compose up -d
+            docker compose exec -T web python manage.py migrate --noinput
+            docker compose ps
+          '
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
