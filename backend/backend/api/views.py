@@ -19,9 +19,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser, B
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter
+from rest_framework.throttling import ScopedRateThrottle, AnonRateThrottle, UserRateThrottle
+from .throttling import AnonBurstRateThrottle, UserBurstRateThrottle
 from django_filters.rest_framework import DjangoFilterBackend
+import jwt
+from django.core.cache import cache
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework_simplejwt.settings import api_settings as simplejwt_settings
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.utils.timezone import make_aware
 
@@ -74,6 +79,16 @@ from .serializers import ClubListSerializer, AcademicCalendarSerializer, Practic
 
 
 logger = logging.getLogger(__name__)
+
+# Throttling des endpoints sensibles : on garde les limites globales
+# (anon/user + burst) EN PLUS de la limite dédiée (throttle_scope), pour
+# que ces vues restent protégées comme toutes les autres tout en ayant
+# un plafond plus strict.
+SENSITIVE_AUTH_THROTTLE_CLASSES = [
+    AnonRateThrottle, UserRateThrottle,
+    AnonBurstRateThrottle, UserBurstRateThrottle,
+    ScopedRateThrottle,
+]
 
 
 def _storage_name_from_value(value: str | None) -> str:
@@ -1250,7 +1265,9 @@ class RegisterView(APIView):
     POST /api/auth/register/
     """
     permission_classes = [AllowAny]
-    
+    throttle_classes = SENSITIVE_AUTH_THROTTLE_CLASSES
+    throttle_scope = 'register'
+
     def post(self, request):
         email = request.data.get('email')
 
@@ -1336,7 +1353,9 @@ class LoginView(APIView):
     POST /api/auth/login/
     """
     permission_classes = [AllowAny]
-    
+    throttle_classes = SENSITIVE_AUTH_THROTTLE_CLASSES
+    throttle_scope = 'login'
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         
@@ -1434,49 +1453,127 @@ class LogoutView(APIView):
             return response
 
 
+def _refresh_grace_cache_key(jti):
+    return f'refresh_rotated:{jti}'
+
+
+def _build_refresh_response(access_token_str, refresh_token_str=None):
+    response = Response({'message': 'Token rafraîchi avec succès.'}, status=status.HTTP_200_OK)
+
+    access_token_max_age = 60 * 60 * 24 if settings.DEBUG else 60 * 15
+    response.set_cookie(
+        key='access_token',
+        value=access_token_str,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite='Lax',
+        max_age=access_token_max_age,
+        path='/',
+    )
+
+    if refresh_token_str is not None:
+        refresh_token_max_age = 60 * 60 * 24 * 7
+        response.set_cookie(
+            key='refresh_token',
+            value=refresh_token_str,
+            httponly=True,
+            secure=not settings.DEBUG,
+            samesite='Lax',
+            max_age=refresh_token_max_age,
+            path='/',
+        )
+
+    return response
+
+
 class RefreshTokenView(APIView):
     """
     Endpoint pour rafraîchir l'access token.
     POST /api/auth/refresh/
     """
     permission_classes = [AllowAny]
-    
+
+    # Fenêtre de tolérance après rotation d'un refresh token : si le même
+    # token (déjà tourné/blacklisté) est présenté à nouveau dans cette
+    # fenêtre, on renvoie les tokens déjà émis au lieu de rejeter la requête.
+    # Sans ça, plusieurs requêtes concurrentes (plusieurs appels API en
+    # parallèle au même instant, ou plusieurs onglets) utilisant le même
+    # refresh token se feraient concurrence : la première gagnerait la
+    # rotation, les suivantes échoueraient et déconnecteraient l'utilisateur
+    # alors que sa session est en réalité toujours valide.
+    ROTATION_GRACE_PERIOD_SECONDS = 10
+
     def post(self, request):
-        try:
-            refresh_token_str = request.COOKIES.get('refresh_token')
-            
-            if not refresh_token_str:
-                return Response(
-                    {'error': 'Token de rafraîchissement manquant.'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-            
-            refresh = RefreshToken(refresh_token_str)
-            new_access_token = refresh.access_token
-            
-            response_data = {'message': 'Token rafraîchi avec succès.'}
-            response = Response(response_data, status=status.HTTP_200_OK)
-            
-            access_token_max_age = 60 * 60 * 24 if settings.DEBUG else 60 * 15
-            response.set_cookie(
-                key='access_token',
-                value=str(new_access_token),
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite='Lax',
-                max_age=access_token_max_age,
-                path='/',
+        refresh_token_str = request.COOKIES.get('refresh_token')
+
+        if not refresh_token_str:
+            return Response(
+                {'error': 'Token de rafraîchissement manquant.'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
-            
-            return response
-            
+
+        try:
+            refresh = RefreshToken(refresh_token_str)
         except (TokenError, InvalidToken):
-            response = Response(
+            replay = self._get_replay(refresh_token_str)
+            if replay:
+                return _build_refresh_response(replay['access'], replay['refresh'])
+
+            # Ne pas supprimer les cookies ici : une requête concurrente a pu
+            # entre-temps réussir sa propre rotation et poser un cookie
+            # valide juste avant celle-ci ; le supprimer écraserait cette
+            # session valide au lieu de simplement laisser échouer cette
+            # requête-ci.
+            return Response(
                 {'error': 'Token invalide ou expiré. Veuillez vous reconnecter.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-            delete_jwt_cookies(response)
-            return response
+
+        new_access_token = refresh.access_token
+        new_refresh_token_str = None
+
+        # Rotation du refresh token : on blackliste l'ancien et on en émet
+        # un nouveau, conformément à ROTATE_REFRESH_TOKENS /
+        # BLACKLIST_AFTER_ROTATION (SIMPLE_JWT). Sans ça, un refresh token
+        # volé reste valable jusqu'à son expiration même si le compte
+        # continue de s'en servir normalement.
+        if simplejwt_settings.ROTATE_REFRESH_TOKENS:
+            old_jti = refresh['jti']
+
+            if simplejwt_settings.BLACKLIST_AFTER_ROTATION:
+                try:
+                    refresh.blacklist()
+                except AttributeError:
+                    pass
+
+            refresh.set_jti()
+            refresh.set_exp()
+            refresh.set_iat()
+            refresh.outstand()
+            new_refresh_token_str = str(refresh)
+
+            cache.set(
+                _refresh_grace_cache_key(old_jti),
+                {'access': str(new_access_token), 'refresh': new_refresh_token_str},
+                timeout=self.ROTATION_GRACE_PERIOD_SECONDS,
+            )
+
+        return _build_refresh_response(str(new_access_token), new_refresh_token_str)
+
+    def _get_replay(self, refresh_token_str):
+        """Best-effort : lit le jti sans vérifier la signature, uniquement
+        pour retrouver une rotation récente déjà effectuée pour ce token."""
+        try:
+            unverified_jti = jwt.decode(
+                refresh_token_str, options={'verify_signature': False}
+            ).get('jti')
+        except Exception:
+            return None
+
+        if not unverified_jti:
+            return None
+
+        return cache.get(_refresh_grace_cache_key(unverified_jti))
 
 
 class MeView(APIView):
@@ -1499,7 +1596,9 @@ class EmailVerificationView(APIView):
     POST /api/auth/jwt/verify-email/ - Activer le compte après confirmation
     """
     permission_classes = [AllowAny]
-    
+    throttle_classes = SENSITIVE_AUTH_THROTTLE_CLASSES
+    throttle_scope = 'token_confirm'
+
     def get(self, request):
         """
         Prévisualiser les informations du compte avant activation.
@@ -1586,7 +1685,9 @@ class ResendVerificationEmailView(APIView):
     POST /api/auth/jwt/resend-verification/
     """
     permission_classes = [AllowAny]
-    
+    throttle_classes = SENSITIVE_AUTH_THROTTLE_CLASSES
+    throttle_scope = 'password_reset'
+
     def post(self, request):
         serializer = ResendVerificationEmailSerializer(data=request.data)
         
@@ -1628,7 +1729,9 @@ class PasswordResetRequestView(APIView):
     POST /api/auth/jwt/forgot-password/
     """
     permission_classes = [AllowAny]
-    
+    throttle_classes = SENSITIVE_AUTH_THROTTLE_CLASSES
+    throttle_scope = 'password_reset'
+
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         
@@ -1671,7 +1774,9 @@ class PasswordResetConfirmView(APIView):
     POST /api/auth/reset-password/
     """
     permission_classes = [AllowAny]
-    
+    throttle_classes = SENSITIVE_AUTH_THROTTLE_CLASSES
+    throttle_scope = 'token_confirm'
+
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         

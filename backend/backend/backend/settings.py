@@ -244,9 +244,33 @@ REST_FRAMEWORK = {
     # Pagination par défaut
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    
+
     # Format des dates
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+
+    # Rate limiting : filet de sécurité global + limites strictes sur les
+    # endpoints sensibles (login, inscription, reset mot de passe...)
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'api.throttling.AnonBurstRateThrottle',
+        'api.throttling.UserBurstRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        # Limites soutenues (fenêtre glissante d'une minute)
+        'anon': '100/min',
+        'user': '300/min',
+        # Limites de rafale (fenêtre glissante d'une seconde) : bloque une
+        # même personne qui enchaînerait de nombreuses requêtes en quelques
+        # secondes, avant même d'atteindre le quota par minute ci-dessus.
+        'anon_burst': '20/s',
+        'user_burst': '50/s',
+        # Endpoints sensibles (voir throttle_scope sur les vues concernées)
+        'login': '10/min',
+        'register': '5/hour',
+        'password_reset': '5/hour',
+        'token_confirm': '20/hour',
+    },
 }
 
 
@@ -438,3 +462,26 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+
+# ====================================================
+# CACHE (Redis en prod) — partagé entre tous les workers Gunicorn
+# ====================================================
+# Nécessaire pour que le rate limiting DRF (DEFAULT_THROTTLE_CLASSES) soit
+# appliqué correctement : avec le cache local par défaut de Django, chaque
+# worker Gunicorn aurait son propre compteur. En dev (DEBUG=True), on reste
+# sur le cache mémoire local pour ne pas dépendre d'un Redis lancé à la main.
+
+if DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': config('DJANGO_CACHE_URL', default='redis://localhost:6379/2'),
+        }
+    }

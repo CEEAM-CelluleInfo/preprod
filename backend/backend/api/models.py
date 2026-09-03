@@ -8,6 +8,8 @@ from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.core.exceptions import ValidationError
 
+from .validators import IMAGE_FIELD_VALIDATORS
+
 
 # =====================================================
 # SECTION 1: UTILISATEURS & AUTHENTIFICATION
@@ -543,6 +545,7 @@ class ActivityProposal(models.Model):
         upload_to="activity_proposals/",
         null=True,
         blank=True,
+        validators=IMAGE_FIELD_VALIDATORS,
         verbose_name="Fichier image"
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending", verbose_name="Statut")
@@ -599,6 +602,7 @@ class GuestActivityProposal(models.Model):
         upload_to="activity_proposals/",
         null=True,
         blank=True,
+        validators=IMAGE_FIELD_VALIDATORS,
         verbose_name="Fichier image"
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending", verbose_name="Statut")
@@ -1262,7 +1266,7 @@ class Leader(models.Model):
     mandat = models.CharField(max_length=20)             # ex: "2025-2026"
     mission = models.TextField(max_length=500)
     linkedin = models.URLField(blank=True, null=True)
-    image = models.FileField(upload_to='leaders/', blank=True, null=True)
+    image = models.FileField(upload_to='leaders/', blank=True, null=True, validators=IMAGE_FIELD_VALIDATORS)
     order = models.PositiveIntegerField(default=0)       # ordre dans le carrousel
     is_active = models.BooleanField(default=True)        # afficher ou non
 
