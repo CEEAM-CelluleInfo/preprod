@@ -47,6 +47,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - media_volume:/app/media
     networks: [backend_net]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://localhost:8000/admin/login/', headers={'X-Forwarded-Proto': 'https'}), timeout=3)"]
@@ -98,6 +100,7 @@ services:
 
 volumes:
   postgres_data:
+  media_volume:
 
 networks:
   backend_net:
