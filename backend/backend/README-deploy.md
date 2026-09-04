@@ -53,6 +53,13 @@ nano .env
 docker compose up -d web celery   # recrée les conteneurs concernés avec les nouvelles variables
 ```
 
+⚠️ **`.env.example` ≠ `.env` réel.** Ajouter une variable dans `.env.example` (committé) ne la rend pas disponible sur le serveur — le `.env` réel n'est jamais synchronisé automatiquement. À chaque fois qu'une nouvelle variable apparaît dans `.env.example` (après un `git pull`), reporter sa valeur à la main dans le `.env` du serveur, sinon l'app retombe silencieusement sur la valeur par défaut du code (`config('X', default=...)`), ce qui peut casser des fonctionnalités sans erreur visible en logs (ex: cache Redis pointant sur `localhost` au lieu de `redis`, incident du 2026-09-04).
+
+Vérifier rapidement ce qui manque :
+```bash
+diff <(grep -oE '^[A-Z_]+' .env.example | sort) <(grep -oE '^[A-Z_]+' .env | sort)
+```
+
 ## Certificat Cloudflare Origin CA
 
 Généré depuis le dashboard Cloudflare (SSL/TLS → Origin Server), valable 15 ans. Stocké en dehors du dépôt git, dans `/home/deploy/certs/cloudflare-origin.{pem,key}` (chmod 600), monté en lecture seule dans le conteneur `nginx`. En cas de régénération, remplacer les deux fichiers puis `docker compose restart nginx`.
