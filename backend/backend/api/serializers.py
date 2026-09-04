@@ -2,6 +2,7 @@
 Serializers Django REST Framework - Plateforme CEEAM
 """
 
+from django.conf import settings
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
@@ -30,9 +31,19 @@ def _resolve_media_url(value: str | None) -> str:
         storage_name = storage_name[len("media/"):]
 
     try:
-        return default_storage.url(storage_name)
+        url = default_storage.url(storage_name)
     except Exception:
         return value
+
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+
+    # Stockage local (pas de domaine dans l'URL renvoyée par FileSystemStorage) :
+    # préfixer avec le domaine du backend, sinon le frontend (autre origine)
+    # résout l'URL relative contre son propre domaine et l'image ne charge pas.
+    backend_origins = getattr(settings, "BACKEND_ORIGINS", None)
+    base_url = backend_origins[0] if backend_origins else ""
+    return f"{base_url}{url}"
 
 
 # =====================================================
