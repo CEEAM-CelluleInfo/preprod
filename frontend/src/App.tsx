@@ -15,6 +15,8 @@ import ActivitiesPage from "./pages/Visitors/AccessPages/ActivitiesPage";
 import ActivityDetailVisitorPage from "./pages/Visitors/AccessPages/ActivityDetailPage";
 import ProposeActivityPage from "./pages/Visitors/AccessPages/ProposeActivityPage";
 import APropos from "./pages/Visitors/AccessPages/APropos";
+import ConditionsUtilisation from "./pages/Visitors/AccessPages/ConditionsUtilisation";
+import PolitiqueConfidentialite from "./pages/Visitors/AccessPages/PolitiqueConfidentialite";
 import Ecole from "./pages/Visitors/AccessPages/Ecole";
 import Laureats from "./pages/Visitors/AccessPages/Laureats";
 import Utilisateurs from "./pages/Visitors/AccessPages/Utilisateurs";
@@ -61,6 +63,8 @@ const App = () => (
           <Route path="/proposer-activite" element={<ProposeActivityPage />} />
           <Route path="/ecole" element={<Ecole />} />
           <Route path="/a-propos" element={<APropos />} />
+          <Route path="/conditions-utilisation" element={<ConditionsUtilisation />} />
+          <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
           <Route path="/laureats" element={<Laureats />} />
           <Route path="/utilisateurs" element={<Utilisateurs />} />
           <Route path="/laureats/rejoindre" element={<RejoindreLaureats />} />

@@ -54,6 +54,14 @@ const Footer = () => {
       <div className="border-t border-border py-4">
         <p className="px-4 text-center text-sm leading-6 text-white">
           © 2026 CEEAM – ENSAM. Tous droits réservés.
+          {" · "}
+          <a href="/conditions-utilisation" className="underline hover:text-primary transition-colors">
+            Conditions d'utilisation
+          </a>
+          {" · "}
+          <a href="/politique-de-confidentialite" className="underline hover:text-primary transition-colors">
+            Politique de confidentialité
+          </a>
         </p>
       </div>
     </footer>

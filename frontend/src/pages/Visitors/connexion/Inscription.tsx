@@ -725,11 +725,25 @@ const Inscription = () => {
                   />
                   <label htmlFor="terms" className="text-xs text-gray-700 cursor-pointer">
                     J'accepte les{" "}
-                    <a href="#" className="font-semibold hover:underline" style={{ color: '#172d45' }}>
+                    <a
+                      href="/conditions-utilisation"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold hover:underline"
+                      style={{ color: '#172d45' }}
+                    >
                       conditions d'utilisation
                     </a>
                     {" "}et la{" "}
-                    <a href="#" className="font-semibold hover:underline" style={{ color: '#172d45' }}>
+                    <a
+                      href="/politique-de-confidentialite"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold hover:underline"
+                      style={{ color: '#172d45' }}
+                    >
                       politique de confidentialité
                     </a>
                   </label>
