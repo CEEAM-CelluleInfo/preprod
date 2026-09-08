@@ -15,7 +15,7 @@ from django.core.files.storage import default_storage
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser, BasePermission, SAFE_METHODS
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter
@@ -3458,7 +3458,7 @@ class SubmitCandidatureView(APIView):
 
 class OpenCandidacyPhaseView(APIView):
     """Action admin: ouvrir la phase de candidature pour une session."""
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsBureauOrAdmin]
 
     def post(self, request, session_id):
         try:
@@ -3575,7 +3575,7 @@ class CloseVoteSessionView(APIView):
 
 class RenewBureauMembersView(APIView):
     """Action admin: renouveler la table BureauMember a partir des resultats de vote."""
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsBureauOrAdmin]
 
     def post(self, request, session_id):
         force = bool(request.data.get("force", False))
@@ -4432,79 +4432,22 @@ class AcademicYearsView(APIView):
 
 
 class ReviewActivityProposalView(APIView):
+    """Approuver/rejeter une proposition d'activité (membre ou invité).
+
+    Gère les deux types de propositions (`proposal_type` = 'member' ou
+    'guest' dans le corps de la requête) : GuestActivityProposal n'a pas de
+    champ `created_by`, donc la notification n'est envoyée que pour les
+    propositions de membres.
+    """
     permission_classes = [IsBureauOrAdmin]
 
     def patch(self, request, pk):
         proposal_type = request.data.get('proposal_type', 'member')
-
-        if proposal_type == 'guest':
-            proposal_model = GuestActivityProposal
-        else:
-            proposal_model = ActivityProposal
+        proposal_model = GuestActivityProposal if proposal_type == 'guest' else ActivityProposal
 
         try:
             proposal = proposal_model.objects.get(pk=pk)
         except proposal_model.DoesNotExist:
-            return Response({'error': 'Proposition introuvable'}, status=status.HTTP_404_NOT_FOUND)
-
-        new_status = request.data.get('status')
-        if new_status not in ['approved', 'rejected']:
-            return Response({'error': "Le statut doit être 'approved' ou 'rejected'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Si déjà traité, bloquer
-        if proposal.status != 'pending':
-            return Response({'error': 'Cette proposition a déjà été traitée'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Si approuvé, créer une activité
-        if new_status == 'approved':
-            # Préparer les données de l'activité
-            activity_data = {
-                'title': proposal.title,
-                'description': proposal.description[:500],  # tronquer si trop long
-                'category': proposal.category,
-                'event_date': timezone.make_aware(timezone.datetime.combine(proposal.proposed_date, proposal.proposed_time)) if proposal.proposed_date and proposal.proposed_time else None,
-                'event_time': proposal.proposed_time.strftime('%H:%M') if proposal.proposed_time else '',
-                'location': proposal.location,
-                'max_participants': proposal.estimated_participants,
-                'is_upcoming': True,
-                'is_published': True,
-                'created_by': request.user,
-            }
-            # Gérer l'image (priorité à image_file, sinon image_url)
-            if proposal.image_file:
-                activity_data['image_url'] = request.build_absolute_uri(proposal.image_file.url)
-            elif proposal.image_url:
-                activity_data['image_url'] = proposal.image_url
-
-            activity_serializer = ActivitySerializer(data=activity_data, context={'request': request})
-            if activity_serializer.is_valid():
-                activity = activity_serializer.save()
-            else:
-                return Response({'error': 'Erreur lors de la création de l\'activité', 'details': activity_serializer.errors},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-        # Mettre à jour la proposition
-        proposal.status = new_status
-        proposal.reviewed_at = timezone.now()
-        proposal.reviewed_by = request.user
-        proposal.reviewer_comment = request.data.get('comment', '')
-        proposal.save()
-        notify_activity_proposal_reviewed(proposal)
-
-        return Response({
-            'id': proposal.id,
-            'status': proposal.status,
-            'message': f'Proposition {new_status} avec succès.',
-            'activity_id': activity.id if new_status == 'approved' else None
-        }, status=status.HTTP_200_OK)
-
-class ReviewActivityProposalView(APIView):
-    permission_classes = [IsBureauOrAdmin]
-
-    def patch(self, request, pk):
-        try:
-            proposal = ActivityProposal.objects.get(pk=pk)
-        except ActivityProposal.DoesNotExist:
             return Response({'error': 'Proposition introuvable'}, status=status.HTTP_404_NOT_FOUND)
 
         new_status = request.data.get('status')
@@ -4539,7 +4482,6 @@ class ReviewActivityProposalView(APIView):
                 'max_participants': proposal.estimated_participants,
                 'is_upcoming': True,
                 'is_published': True,
-                'created_by': request.user.id,   # <- Attention : ici on passe l'ID, pas l'objet !
             }
             # Gestion de l'image
             if proposal.image_file:
@@ -4547,12 +4489,9 @@ class ReviewActivityProposalView(APIView):
             elif proposal.image_url:
                 activity_data['image_url'] = proposal.image_url
 
-            # Correction : dans ActivitySerializer, 'created_by' attend un objet User
-            # On supprime 'created_by' du dict pour le gérer après
-            created_by = activity_data.pop('created_by', None)
             serializer = ActivitySerializer(data=activity_data, context={'request': request})
             if serializer.is_valid():
-                activity = serializer.save(created_by=request.user)  # on passe l'objet ici
+                activity = serializer.save(created_by=request.user)
             else:
                 print(serializer.errors)  # debug
                 return Response({'error': 'Erreur création activité', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
