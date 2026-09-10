@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, Trash2, X, Check, Upload } from 'lucide-react';
+import { Pencil, Trash2, X, Check, Upload, Search, UserRound } from 'lucide-react';
 import { apiGet, apiPostFormData, apiPutFormData, apiDelete } from '@/services/api.config';
 
 interface HistoricalSG {
@@ -12,7 +12,23 @@ interface HistoricalSG {
   image: string | null;
   linkedin: string;
   position: string;
+  email: string;
+  nationality: string;
+  flag: string;
+  mission: string;
   is_active: boolean;
+}
+
+interface PlatformUser {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  campus: string;
+  specialite_intitule: string | null;
+  country_name: string | null;
+  country_flag: string | null;
+  avatar_url: string | null;
 }
 
 const emptyForm = {
@@ -22,6 +38,10 @@ const emptyForm = {
   campus: '',
   filiere: '',
   linkedin: '',
+  email: '',
+  nationality: '',
+  flag: '',
+  mission: '',
 };
 
 const LeadersAdmin = () => {
@@ -35,6 +55,49 @@ const LeadersAdmin = () => {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [userQuery, setUserQuery] = useState('');
+  const [userResults, setUserResults] = useState<PlatformUser[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [selectedUserLabel, setSelectedUserLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userQuery.trim().length < 2) {
+      setUserResults([]);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setSearchingUsers(true);
+      try {
+        const res = await apiGet<{ data: PlatformUser[] }>(`/admin/users/?search=${encodeURIComponent(userQuery)}`);
+        setUserResults(res.data ?? []);
+      } catch {
+        setUserResults([]);
+      } finally {
+        setSearchingUsers(false);
+      }
+    }, 350);
+    return () => clearTimeout(timeout);
+  }, [userQuery]);
+
+  const handleSelectUser = (user: PlatformUser) => {
+    setForm({
+      ...form,
+      prenom: user.first_name || form.prenom,
+      nom: user.last_name || form.nom,
+      campus: user.campus || form.campus,
+      filiere: user.specialite_intitule || form.filiere,
+      email: user.email || form.email,
+      nationality: user.country_name || form.nationality,
+      flag: user.country_flag || form.flag,
+    });
+    if (user.avatar_url && !imageFile) {
+      setImagePreview(user.avatar_url);
+    }
+    setSelectedUserLabel(`${user.first_name} ${user.last_name}`.trim() || user.email);
+    setUserQuery('');
+    setUserResults([]);
+  };
 
   const fetchLeaders = async () => {
     setLoading(true);
@@ -78,9 +141,16 @@ const LeadersAdmin = () => {
       campus: leader.campus,
       filiere: leader.filiere,
       linkedin: leader.linkedin,
+      email: leader.email || '',
+      nationality: leader.nationality || '',
+      flag: leader.flag || '',
+      mission: leader.mission || '',
     });
     setImageFile(null);
     setImagePreview(leader.image || null);
+    setSelectedUserLabel(null);
+    setUserQuery('');
+    setUserResults([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -89,6 +159,9 @@ const LeadersAdmin = () => {
     setForm(emptyForm);
     setImageFile(null);
     setImagePreview(null);
+    setSelectedUserLabel(null);
+    setUserQuery('');
+    setUserResults([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -108,10 +181,10 @@ const LeadersAdmin = () => {
     fd.append('linkedin', form.linkedin);
     fd.append('position', 'Secrétaire Général');
     fd.append('executive', `Bureau ${form.mandat}`);
-    fd.append('email', '');
-    fd.append('nationality', '');
-    fd.append('flag', '');
-    fd.append('mission', '');
+    fd.append('email', form.email);
+    fd.append('nationality', form.nationality);
+    fd.append('flag', form.flag);
+    fd.append('mission', form.mission);
     fd.append('is_active', 'true');
     fd.append('order', '0');
     if (imageFile) {
@@ -129,6 +202,9 @@ const LeadersAdmin = () => {
       setForm(emptyForm);
       setImageFile(null);
       setImagePreview(null);
+      setSelectedUserLabel(null);
+      setUserQuery('');
+      setUserResults([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
       await fetchLeaders();
     } catch (err: any) {
@@ -173,6 +249,65 @@ const LeadersAdmin = () => {
         <h3 className="mb-4 text-base font-bold text-slate-900">
           {editingId !== null ? 'Modifier un ancien SG' : 'Ajouter un ancien Secrétaire Général'}
         </h3>
+
+        <div className="mb-5 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-3">
+          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+            <UserRound className="h-3.5 w-3.5" />
+            Pré-remplir depuis un compte existant (optionnel)
+          </label>
+          {selectedUserLabel ? (
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm">
+              <span className="truncate text-slate-700">
+                Champs pré-remplis depuis <strong>{selectedUserLabel}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedUserLabel(null)}
+                className="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-700"
+              >
+                Changer
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <Search className="h-4 w-4 shrink-0 text-slate-400" />
+                <input
+                  type="text"
+                  value={userQuery}
+                  onChange={(e) => setUserQuery(e.target.value)}
+                  placeholder="Rechercher par nom ou email..."
+                  className="w-full bg-transparent text-sm outline-none"
+                />
+              </div>
+              {userQuery.trim().length >= 2 && (
+                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                  {searchingUsers ? (
+                    <div className="px-3 py-2 text-xs text-slate-400">Recherche...</div>
+                  ) : userResults.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-slate-400">Aucun utilisateur trouvé.</div>
+                  ) : (
+                    userResults.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleSelectUser(u)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50"
+                      >
+                        <span className="font-medium text-slate-800">{u.first_name} {u.last_name}</span>
+                        <span className="truncate text-xs text-slate-400">{u.email}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <p className="mt-1.5 text-[11px] text-slate-400">
+            Complète automatiquement prénom, nom, email, campus, filière et nationalité. Les champs restent modifiables ci-dessous.
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-600">Prénom *</label>
@@ -248,6 +383,50 @@ const LeadersAdmin = () => {
             </label>
           </div>
 
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-slate-600">Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="Ex: ancien.sg@ceaam.org"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-[#f59f24] focus:ring-2 focus:ring-[#f59f24]/20"
+            />
+          </div>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-600">Nationalité</label>
+              <input
+                type="text"
+                value={form.nationality}
+                onChange={(e) => setForm({ ...form, nationality: e.target.value })}
+                placeholder="Ex: Burkina Faso"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-[#f59f24] focus:ring-2 focus:ring-[#f59f24]/20"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-600">Drapeau</label>
+              <input
+                type="text"
+                value={form.flag}
+                onChange={(e) => setForm({ ...form, flag: e.target.value })}
+                placeholder="🇧🇫"
+                maxLength={4}
+                className="w-16 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-sm outline-none focus:border-[#f59f24] focus:ring-2 focus:ring-[#f59f24]/20"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1 sm:col-span-2">
+            <label className="text-xs font-semibold text-slate-600">Mission personnelle</label>
+            <textarea
+              value={form.mission}
+              onChange={(e) => setForm({ ...form, mission: e.target.value })}
+              placeholder="Message ou mission personnelle affiché sur la page À propos..."
+              rows={3}
+              maxLength={500}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-[#f59f24] focus:ring-2 focus:ring-[#f59f24]/20"
+            />
+          </div>
           <div className="flex flex-col gap-1 sm:col-span-2">
             <label className="text-xs font-semibold text-slate-600">LinkedIn</label>
             <input
