@@ -4084,7 +4084,7 @@ class AboutLeadersView(APIView):
     def get(self, request):
         # ── Source 1 : entrées manuelles (anciens SG avant la plateforme) ──────
         manual_leaders = Leader.objects.filter(is_active=True)
-        serializer = LeaderSerializer(manual_leaders.order_by('-mandat'), many=True)
+        serializer = LeaderSerializer(manual_leaders.order_by('-mandat'), many=True, context={'request': request})
 
         merged = []
 
@@ -4097,7 +4097,7 @@ class AboutLeadersView(APIView):
                 'campus': leader.campus,
                 'filiere': leader.filiere,
                 'promotion': '',
-                'image': leader.image.url if leader.image else '',
+                'image': _build_absolute_media_url(request, leader.image.url) if leader.image else '',
             })
 
         # ── Source 2 : BureauMember SG enregistrés sur la plateforme ───────────
@@ -4116,7 +4116,7 @@ class AboutLeadersView(APIView):
                 'campus': getattr(user, 'campus', ''),
                 'filiere': getattr(getattr(user, 'specialite', None), 'intitule', ''),
                 'promotion': getattr(user, 'promotion', ''),
-                'image': getattr(user, 'avatar_url', ''),
+                'image': _build_absolute_media_url(request, getattr(user, 'avatar_url', '')),
             })
 
         # ── Dédupliquer par mandat, trier par année desc, garder top 5 ─────────
